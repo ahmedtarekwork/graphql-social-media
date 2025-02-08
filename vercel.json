@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/remove-stories-after-24h",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
