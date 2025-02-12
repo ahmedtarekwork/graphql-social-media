@@ -6,14 +6,24 @@ const commentTypeDefs = gql`
       commentData: GetPostCommentsData!
     ): GetPostCommentsResponseType!
     getSingleComment(commentId: ID!): CommentType
+
+    getCommentReactions(
+      reactionsInfo: GetItemReactionsInput!
+    ): GetItemReactionsResponseType!
+
+    getMyReactionToComment(itemId: ID!): GetMyReactionToItemResponseType!
   }
 
   type Mutation {
-    addComment(addCommentData: AddCommentInput): CommentType!
-    editComment(editCommentData: EditCommentInput): CommentType!
-    deleteComment(commentId: String!): SuccessResponseType!
-    deleteMediaFromComment(mediaData: DeleteMediaFromItemInput): CommentType!
-    toggleReactionOnComment(reactionData: ToggleReactionInput!): CommentType!
+    addComment(addCommentData: AddCommentInput!): CommentType!
+    editComment(editCommentData: EditCommentInput!): SuccessResponseType!
+    deleteComment(commentId: ID!): SuccessResponseType!
+    deleteMediaFromComment(
+      mediaData: DeleteMediaFromItemInput!
+    ): SuccessResponseType!
+    toggleReactionOnComment(
+      reactionData: ToggleReactionInput!
+    ): SuccessResponseType!
   }
 
   type GetPostCommentsResponseType {
@@ -37,6 +47,7 @@ const commentTypeDefs = gql`
     postId: String!
     page: Int!
     limit: Int!
+    skip: Int
   }
 
   input AddCommentInput {

@@ -1,6 +1,12 @@
+// nextjs
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+
+// styles
 import "./globals.css";
+
+// react
+import { Suspense } from "react";
 
 // contexts
 import ApolloContext from "@/contexts/ApolloContext";
@@ -15,6 +21,7 @@ import { Toaster } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/sidebar/Sidebar";
+import Loading from "./loading";
 // shadcn
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -44,26 +51,28 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <ApolloContext>
-          <Toaster richColors />
+        <Suspense fallback={<Loading />}>
+          <ApolloContext>
+            <Toaster richColors />
 
-          <AuthContext>
-            <UserNotificationsCountContext>
-              <SidebarProvider defaultOpen={false}>
-                <Header />
-                <Sidebar />
-              </SidebarProvider>
+            <AuthContext>
+              <UserNotificationsCountContext>
+                <SidebarProvider defaultOpen={false}>
+                  <Header />
+                  <Sidebar />
+                </SidebarProvider>
 
-              <PostsProvider>
-                <main className="flex-1 flex flex-col container my-4">
-                  {children}
-                </main>
-              </PostsProvider>
-            </UserNotificationsCountContext>
+                <PostsProvider>
+                  <main className="flex-1 flex flex-col container my-4">
+                    {children}
+                  </main>
+                </PostsProvider>
+              </UserNotificationsCountContext>
 
-            <Footer />
-          </AuthContext>
-        </ApolloContext>
+              <Footer />
+            </AuthContext>
+          </ApolloContext>
+        </Suspense>
       </body>
     </html>
   );

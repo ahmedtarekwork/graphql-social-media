@@ -20,10 +20,10 @@ const postTypeDefs = gql`
     ): GetPostSharesUsersResponseType!
 
     getPostReactions(
-      reactionsInfo: GetPostReactionsInput!
-    ): GetPostReactionsResponseType!
+      reactionsInfo: GetItemReactionsInput!
+    ): GetItemReactionsResponseType!
 
-    getMyReactionToPost(postId: ID!): GetMyReactionToPostResponseType!
+    getMyReactionToPost(itemId: ID!): GetMyReactionToItemResponseType!
   }
 
   type Mutation {
@@ -36,22 +36,6 @@ const postTypeDefs = gql`
       mediaData: DeleteMediaFromItemInput!
     ): SuccessResponseType!
     toggleSharedPost(postId: ID!): SuccessResponseType!
-  }
-
-  input GetPostReactionsInput {
-    postId: ID!
-    limit: Int!
-    page: Int!
-    reaction: Reactions!
-  }
-
-  type GetMyReactionToPostResponseType {
-    reaction: Reactions
-  }
-
-  type GetPostReactionsResponseType {
-    reactions: [NotFullUser!]!
-    isFinalPage: Boolean!
   }
 
   type GetPostSharesUsersResponseType {

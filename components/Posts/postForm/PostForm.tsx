@@ -21,9 +21,9 @@ import {
 import { PostsContext } from "@/contexts/PostsContext";
 
 // components
-import PostFormMediaPreview, {
-  type PostFormMediaPreviewRefType,
-} from "./PostFormMediaPreview";
+import FormMediaPreview, {
+  type FormMediaPreviewRefType,
+} from "../FormMediaPreview";
 
 import Radio_DropDownMenu, {
   type Radio_DropDownMenuRefType,
@@ -187,7 +187,7 @@ const PostForm = ({
 
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
-  const postMediaPreviewRef = useRef<PostFormMediaPreviewRefType>(null);
+  const formMediaPreviewRef = useRef<FormMediaPreviewRefType>(null);
   const privacyListRef = useRef<Radio_DropDownMenuRefType>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -275,7 +275,7 @@ const PostForm = ({
 
     const form = formRef.current as HTMLFormElement;
 
-    const media = postMediaPreviewRef.current?.media || [];
+    const media = formMediaPreviewRef.current?.media || [];
 
     const uploadMediaFunc = async () => {
       try {
@@ -332,7 +332,7 @@ const PostForm = ({
 
         form.reset();
 
-        if (media.length) postMediaPreviewRef.current?.setMedia([]);
+        if (media.length) formMediaPreviewRef.current?.setMedia([]);
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_) {}
 
@@ -390,7 +390,7 @@ const PostForm = ({
 
   useEffect(() => {
     if (mode === "edit" && oldPost?.media?.length)
-      postMediaPreviewRef.current?.setOldMedia(oldPost.media);
+      formMediaPreviewRef.current?.setOldMedia(oldPost.media);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -404,6 +404,14 @@ const PostForm = ({
   }, [fetchMoreLoading]);
 
   const submitBtnContent = mode === "edit" ? "Changes" : "Post";
+
+  const mediaPreviewerProps =
+    mode === "new"
+      ? { mode }
+      : {
+          mode,
+          itemId: oldPost?._id || "",
+        };
 
   return (
     <form
@@ -471,15 +479,11 @@ const PostForm = ({
         <p>block comments</p>
       </label>
 
-      <PostFormMediaPreview
-        ref={postMediaPreviewRef}
+      <FormMediaPreview
+        ref={formMediaPreviewRef}
         disableBtns={loading || uploadingMedia}
-        {...(mode === "edit"
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ({ postId: oldPost?._id || "" } as any)
-          : {})}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mode={mode as any}
+        {...mediaPreviewerProps}
+        type="post"
       />
 
       <div className="flex gap-2 [&>*]:flex-1 flex-wrap">
@@ -494,7 +498,7 @@ const PostForm = ({
           onChange={(e) => {
             const media = e?.target?.files;
             if (media?.length) {
-              postMediaPreviewRef.current?.setMedia((prev) => [
+              formMediaPreviewRef.current?.setMedia((prev) => [
                 ...prev,
                 ...Array.from(media).map((file) => ({ file, id: nanoid() })),
               ]);

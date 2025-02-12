@@ -23,10 +23,12 @@ import CommentsDialog from "./comments/CommentsDialog";
 import SharePostBtn from "./postShares/SharePostBtn";
 import ToggleReactionBtn from "./reactions/ToggleReactionBtn";
 import ReactionsDialog from "./reactions/ReactionsDialog";
+import ImageWithLoading from "../ImageWithLoading";
 
 // shadcn
 import { Button } from "../ui/button";
 import { AlertDialog, AlertDialogTrigger } from "../ui/alert-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import {
   DropdownMenu,
@@ -75,7 +77,6 @@ import classNames from "classnames";
 
 // gql
 import { useQuery } from "@apollo/client";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export type InsideProfileType =
   | {
@@ -126,6 +127,7 @@ const PostCard = ({
     commentsCount,
     isShared,
     reactions,
+    sharePerson,
   },
   profileOwner,
   skipCount,
@@ -149,10 +151,24 @@ const PostCard = ({
 
   return (
     <TagName className="rounded-sm shadow-md p-2 border border-primary space-y-1.5">
-      {profileOwner && ownerId.toString() !== profileOwner._id && (
+      {sharePerson && (
         <b className="text-gray-500 mb-1 flex gap-1 flex-wrap items-center">
           <FaShare size={16} className={`fill-gray-500`} />
-          {profileOwner.username} shared this post
+          <Link
+            href={`/user/${sharePerson._id}`}
+            className="hover:underline text-black"
+          >
+            {sharePerson.profilePicture?.secure_url && (
+              <Image
+                width={50}
+                height={50}
+                src={sharePerson.profilePicture?.secure_url}
+                alt="post sharer image"
+              />
+            )}
+            {sharePerson.username || "this user"}
+          </Link>{" "}
+          shared this post
         </b>
       )}
 
@@ -244,72 +260,81 @@ const PostCard = ({
         <p className="border-t border-primary pt-2 pb-1">{caption}</p>
       )}
 
-      <Dialog>
-        <DialogTrigger>
-          <ul className="flex flex-wrap gap-1.5 [&>*]:flex-1">
-            {(media || [])
-              .slice(0, 3)
-              .map(({ secure_url, public_id }, mediaIndex) => {
-                const isMoreThanThreeElements = (media || []).length > 3;
+      {!!media?.length && (
+        <Dialog>
+          <DialogTrigger>
+            <ul className="flex flex-wrap gap-1.5 [&>*]:flex-1">
+              {(media || [])
+                .slice(0, 3)
+                .map(({ secure_url, public_id }, mediaIndex) => {
+                  const isMoreThanThreeElements = (media || []).length > 3;
 
-                return (
-                  <li
-                    key={public_id}
-                    className={classNames(
-                      "grid place-content-center min-w-[150px]",
-                      mediaIndex === 2 && isMoreThanThreeElements
-                        ? "relative post-media-list-item-cover"
-                        : ""
-                    )}
-                  >
-                    <Image
-                      src={secure_url}
-                      alt={`media No.${mediaIndex + 1} of post`}
-                      width={250}
-                      height={250}
-                      className="aspect-[1]"
-                      priority
-                    />
-                  </li>
-                );
-              })}
-          </ul>
-        </DialogTrigger>
-
-        <DialogContent>
-          <DialogHeader>
-            <VisuallyHidden>
-              <DialogTitle>post media list dialog</DialogTitle>
-              <DialogDescription>
-                This is post meida list dialog
-              </DialogDescription>
-            </VisuallyHidden>
-
-            <Carousel className="h-full">
-              <CarouselContent className="h-full">
-                {(media || []).map(({ secure_url, public_id }, mediaIndex) => {
                   return (
-                    <CarouselItem key={public_id} className="relative h-full">
+                    <li
+                      key={public_id}
+                      className={classNames(
+                        "grid place-content-center min-w-[150px]",
+                        mediaIndex === 2 && isMoreThanThreeElements
+                          ? "relative post-media-list-item-cover"
+                          : ""
+                      )}
+                    >
                       <Image
                         src={secure_url}
                         alt={`media No.${mediaIndex + 1} of post`}
-                        className="aspect-[1] object-contain"
-                        fill
+                        width={250}
+                        height={250}
+                        className="aspect-[1]"
                         priority
                       />
-                    </CarouselItem>
+                    </li>
                   );
                 })}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+            </ul>
+          </DialogTrigger>
+
+          <DialogContent>
+            <DialogHeader>
+              <VisuallyHidden>
+                <DialogTitle>post media list dialog</DialogTitle>
+                <DialogDescription>
+                  This is post meida list dialog
+                </DialogDescription>
+              </VisuallyHidden>
+
+              <Carousel className="h-full flex gap-3">
+                <CarouselPrevious className="self-center !static" />
+
+                <CarouselContent className="h-full">
+                  {(media || []).map(
+                    ({ secure_url, public_id }, mediaIndex) => {
+                      return (
+                        <CarouselItem
+                          key={public_id}
+                          className="relative h-full"
+                        >
+                          <ImageWithLoading
+                            src={secure_url}
+                            alt={`media No.${mediaIndex + 1} of post`}
+                            className="aspect-[1] object-contain"
+                            fill
+                            priority
+                          />
+                        </CarouselItem>
+                      );
+                    }
+                  )}
+                </CarouselContent>
+
+                <CarouselNext className="self-center !static" />
+              </Carousel>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="flex gap-3 flex-wrap items-center py-1">
-        <ReactionsDialog itemId={_id} reactionsCount={reactions} />
+        <ReactionsDialog type="post" itemId={_id} reactionsCount={reactions} />
 
         <CommentsDialog
           triggerBtn={
@@ -318,6 +343,7 @@ const PostCard = ({
               {commentsCount}
             </DialogTrigger>
           }
+          postId={_id}
         />
 
         {community !== "group" && (
@@ -333,7 +359,7 @@ const PostCard = ({
       </div>
 
       <div className="flex items-center flex-wrap gap-0.5 [&>*]:flex-1 border-t border-primary pt-1 text-primary">
-        <ToggleReactionBtn itemId={_id} />
+        <ToggleReactionBtn itemId={_id} type="post" />
 
         <CommentsDialog
           triggerBtn={
@@ -348,6 +374,7 @@ const PostCard = ({
               </DialogTrigger>
             </Button>
           }
+          postId={_id}
         />
 
         {community !== "group" && user?._id !== ownerId && (

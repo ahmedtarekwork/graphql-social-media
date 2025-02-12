@@ -28,6 +28,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 // icons
 import { FaShare, FaUser } from "react-icons/fa";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // gql
 import { gql, useLazyQuery } from "@apollo/client";
@@ -99,7 +100,7 @@ const DisplayPostShares = ({
   }, [sharesCount, data]);
 
   const handleFetchMore = () => {
-    if (fetchMoreLoading || isFinalPage || loading) return;
+    if (fetchMoreLoading || isFinalPage || loading || error) return;
 
     pageAndLimit.current.page += 1;
 
@@ -138,7 +139,7 @@ const DisplayPostShares = ({
 
       <DialogContent
         aria-describedby={`post-${postId}-shares`}
-        onScroll={async (e) => {
+        onScroll={(e) => {
           const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
           const isBottom = scrollTop + clientHeight >= scrollHeight;
 
@@ -155,6 +156,25 @@ const DisplayPostShares = ({
           </VisuallyHidden>
 
           {loading && <Loading />}
+
+          {error && !loading && (
+            <IllustrationPage
+              btn={{
+                type: "custom",
+                component: (
+                  <Button
+                    className="mx-auto"
+                    onClick={() => window.location.reload()}
+                  >
+                    <FaArrowRotateLeft />
+                    refresh page
+                  </Button>
+                ),
+              }}
+              content="can't get this post comments at the momment"
+              svg={commentsSVG}
+            />
+          )}
 
           {!sharesCount && !error && !loading && (
             <div className="font-bold">
@@ -181,7 +201,7 @@ const DisplayPostShares = ({
 
           {!!sharesCount && !error && !loading && (
             <>
-              <ul className="spze-y-1">
+              <ul className="spze-y-2">
                 {shares.map(({ _id, username, profilePicture }, i) => (
                   <li key={_id}>
                     <Link
@@ -208,7 +228,9 @@ const DisplayPostShares = ({
                 ))}
               </ul>
 
-              {fetchMoreLoading && <b>Loading...</b>}
+              {fetchMoreLoading && (
+                <Loading size={16} withText withFullHeight={false} />
+              )}
 
               {!isFinalPage && (
                 <Button
@@ -219,14 +241,6 @@ const DisplayPostShares = ({
                 </Button>
               )}
             </>
-          )}
-
-          {error && !loading && (
-            <IllustrationPage
-              btn={{ type: "custom", component: <></> }}
-              content="can't get this post comments at the momment"
-              svg={commentsSVG}
-            />
           )}
         </DialogHeader>
       </DialogContent>

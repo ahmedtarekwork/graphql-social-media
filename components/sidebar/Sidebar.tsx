@@ -2,6 +2,7 @@
 
 // nextjs
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // react
 import { useContext, useId, useState } from "react";
@@ -74,6 +75,7 @@ const sidebarItems: {
 ].map((item) => ({ ...item, id: nanoid() }));
 
 const Sidebar = () => {
+  const router = useRouter();
   const [openDialog, setOpenDialog] = useState(false);
 
   const { user, setUser } = useContext(authContext);
@@ -207,6 +209,8 @@ const Sidebar = () => {
                         try {
                           await fetch("/api/logout");
                           setUser(null);
+                          router.push("/login");
+
                           toggleSidebar();
 
                           // eslint-disable-next-line @typescript-eslint/no-unused-vars

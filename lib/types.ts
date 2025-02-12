@@ -88,6 +88,7 @@ export type PostType = CommentAndPostSharedProps & {
   };
   shareDate: string;
   isShared: boolean;
+  sharePerson?: NotFullUserType;
 };
 
 export type CommentType = CommentAndPostSharedProps & {

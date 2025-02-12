@@ -26,7 +26,7 @@ type BtnType =
     };
 
 type Props = {
-  content: string;
+  content: ReactNode;
   svg: StaticImport;
   btn: BtnType;
 };

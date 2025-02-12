@@ -25,13 +25,15 @@ import { flatReactions, reactionsInfo } from "@/constants/reactions";
 
 // utils
 import classNames from "classnames";
+import { abbreviateNumber } from "js-abbreviation-number";
 
 type Props = {
   itemId: string;
   reactionsCount: ReactionsType;
+  type: "post" | "comment";
 };
 
-const ReactionsDialog = ({ itemId, reactionsCount }: Props) => {
+const ReactionsDialog = ({ itemId, reactionsCount, type }: Props) => {
   const [activeReaction, setActiveReaction] =
     useState<keyof ReactionsType>("like");
 
@@ -45,12 +47,14 @@ const ReactionsDialog = ({ itemId, reactionsCount }: Props) => {
   return (
     <Dialog>
       <DialogTrigger>
-        <ul className="p-1 flex items-center gap-2 bg-primary bg-opacity-10 rounded-full shadow-sm border border-primary border-opacity-40 transition duration-200 hover:border-opacity-100 hover:bg-opacity-20">
+        <ul className="p-1 flex items-center gap-2 bg-accent rounded-full shadow-sm border border-primary border-opacity-40 transition duration-200 hover:border-opacity-100">
           {reactions.map(({ Icon, count, name, color }) => {
             return (
               <li key={name} className="flex items-center gap-0.5">
                 <Icon className={classNames(`fill-${color}`)} size={16} />
-                <p className={classNames(`text-${color}`)}>{count}</p>
+                <p className={classNames(`text-${color}`)}>
+                  {abbreviateNumber(count)}
+                </p>
               </li>
             );
           })}
@@ -91,7 +95,9 @@ const ReactionsDialog = ({ itemId, reactionsCount }: Props) => {
                   >
                     <Icon className={classNames(`fill-${color}`)} size={25} />
 
-                    <p className={classNames(`text-${color}`)}>{count}</p>
+                    <p className={classNames(`text-${color}`)}>
+                      {abbreviateNumber(count)}
+                    </p>
                   </Button>
                 </li>
               );
@@ -100,6 +106,7 @@ const ReactionsDialog = ({ itemId, reactionsCount }: Props) => {
 
           {flatReactions.map((reaction) => (
             <ReactionTab
+              type={type}
               key={reaction}
               itemId={itemId}
               reaction={reaction as keyof ReactionsType}

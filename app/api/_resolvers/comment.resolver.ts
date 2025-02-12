@@ -12,6 +12,9 @@ import checkForPostPrivacy, {
 
 import { Types } from "mongoose";
 
+// constants
+import { flatReactions } from "@/constants/reactions";
+
 // models
 import Post from "../_models/post.model";
 import Comment from "../_models/comment.model";
@@ -19,6 +22,7 @@ import Comment from "../_models/comment.model";
 // types
 import type {
   APIContextFnType,
+  CommentType,
   ImageType,
   Pagination,
   ReactionsType,
@@ -29,17 +33,58 @@ const commentResolvers = {
     getPostComments: async (
       _: unknown,
       {
-        commentData: { postId, page = 1, limit = 0 },
-      }: { commentData: Pagination<{ postId: string }> }
+        commentData: { postId, page = 1, limit = 0, skip = 0 },
+      }: { commentData: Pagination<{ postId: string; skip: number }> }
     ) =>
       await handleConnectDB({
         publicErrorMsg: "something went wrong while getting comments",
         async resolveCallback() {
-          return await Comment.find({ postId })
+          const mainSkip = limit * (page - 1);
+          const commentsPromise = Comment.find({ post: postId })
+            .lean()
+            .select({
+              "reactions.like.count": 1,
+              "reactions.love.count": 1,
+              "reactions.sad.count": 1,
+              "reactions.angry.count": 1,
+              comment: 1,
+              media: 1,
+              privacy: 1,
+              community: 1,
+              createdAt: 1,
+            })
             .sort("-createdAt")
             .populate({ path: "owner", select: "_id username profilePicture" })
             .limit(limit)
-            .skip(limit * (page - 1));
+            .skip(mainSkip + skip);
+
+          const commentsCountPromise = Comment.countDocuments({ post: postId });
+
+          const [comments, commentsCount] = await Promise.allSettled([
+            commentsPromise,
+            commentsCountPromise,
+          ]);
+
+          if (
+            [comments, commentsCount].some((res) => res.status === "rejected")
+          ) {
+            throw new GraphQLError(
+              "can't get this post comments at the momment",
+              {
+                extensions: {
+                  code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
+                },
+              }
+            );
+          }
+
+          return {
+            comments:
+              (comments as unknown as { value: CommentType[] })?.value || [],
+            isFinalPage:
+              page * limit >=
+              ((commentsCount as { value: number })?.value || 0),
+          };
         },
       }),
 
@@ -50,7 +95,20 @@ const commentResolvers = {
       handleConnectDB({
         publicErrorMsg: "something went wrong while getting the comment",
         async resolveCallback() {
-          const comment = await Comment.findById(commentId).populate("owner");
+          const comment = await Comment.findById(commentId)
+            .populate({ path: "owner", select: "_id username profilePicture" })
+            .lean()
+            .select({
+              "reactions.like.count": 1,
+              "reactions.love.count": 1,
+              "reactions.sad.count": 1,
+              "reactions.angry.count": 1,
+              comment: 1,
+              media: 1,
+              privacy: 1,
+              community: 1,
+              createdAt: 1,
+            });
 
           if (!comment) {
             throw new GraphQLError("comment with given id not found", {
@@ -61,6 +119,183 @@ const commentResolvers = {
           return comment;
         },
       }),
+
+    getCommentReactions: async (
+      _: unknown,
+      {
+        reactionsInfo: {
+          itemId: commentId,
+          limit = 0,
+          page = 1,
+          reaction = "like",
+        },
+      }: {
+        reactionsInfo: Pagination<{
+          itemId: string;
+          reaction: keyof ReactionsType;
+        }>;
+      }
+    ) => {
+      return await handleConnectDB({
+        publicErrorMsg: "can't get comment reactions at the momment",
+        async resolveCallback() {
+          if (!commentId) {
+            throw new GraphQLError("comment id is required", {
+              extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+            });
+          }
+
+          const result = await Comment.aggregate([
+            { $match: { _id: new Types.ObjectId(commentId) } },
+            {
+              $facet: {
+                reactionsCount: [
+                  {
+                    $project: {
+                      reactionsCount: {
+                        $size: `$reactions.${reaction}.users`,
+                      },
+                    },
+                  },
+                ],
+
+                reactions: [
+                  { $unwind: `$reactions.${reaction}.users` },
+                  { $skip: (page - 1) * limit },
+                  { $limit: limit },
+                  {
+                    $lookup: {
+                      from: "users",
+                      localField: `reactions.${reaction}.users`,
+                      foreignField: "_id",
+                      as: "userInfo",
+                    },
+                  },
+
+                  {
+                    $unwind: "$userInfo",
+                  },
+
+                  {
+                    $project: {
+                      _id: 0,
+                      userInfo: {
+                        _id: 1,
+                        username: 1,
+                        profilePicture: 1,
+                      },
+                    },
+                  },
+
+                  {
+                    $group: {
+                      _id: "$_id",
+                      reactions: { $push: "$userInfo" },
+                    },
+                  },
+                ],
+              },
+            },
+          ]);
+
+          const reactions = result?.[0]?.reactions?.[0]?.reactions || [];
+
+          const reactionsCount =
+            result?.[0]?.reactionsCount?.[0]?.reactionsCount || 0;
+
+          return {
+            isFinalPage: page * limit >= reactionsCount,
+            reactions,
+          };
+        },
+      });
+    },
+
+    getMyReactionToComment: async (
+      _: unknown,
+      { itemId: commentId }: { itemId: string },
+      { req }: APIContextFnType
+    ) => {
+      return await handleConnectDB({
+        publicErrorMsg:
+          "can't get your reaction to this comment at the momment",
+        validateToken: true,
+        req,
+        async resolveCallback(user) {
+          if (!commentId) {
+            throw new GraphQLError("comment id is required", {
+              extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+            });
+          }
+
+          const result = await Comment.aggregate([
+            { $match: { _id: new Types.ObjectId(commentId) } },
+            {
+              $facet: {
+                like: [
+                  {
+                    $project: {
+                      like: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.like.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { like: true } },
+                ],
+                love: [
+                  {
+                    $project: {
+                      love: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.love.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { love: true } },
+                ],
+                sad: [
+                  {
+                    $project: {
+                      sad: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.sad.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { sad: true } },
+                ],
+                angry: [
+                  {
+                    $project: {
+                      angry: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.angry.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { angry: true } },
+                ],
+              },
+            },
+          ]);
+
+          return {
+            reaction: Object.entries(result?.[0]).find(([key, value]) => {
+              return (value as Record<string, unknown>[])?.[0]?.[key];
+            })?.[0],
+          };
+        },
+      });
+    },
   },
 
   Mutation: {
@@ -92,7 +327,7 @@ const commentResolvers = {
       return await handleConnectDB({
         req,
         validateToken: true,
-        publicErrorMsg: "something went wrong while posting the comment",
+        publicErrorMsg: "something went wrong while publishing the comment",
         async resolveCallback(user) {
           const post = await checkForPostPrivacy(postId, user._id);
           if (post instanceof GraphQLError) throw post;
@@ -111,6 +346,9 @@ const commentResolvers = {
             community: post.community,
             communityId: post.communityId,
           });
+
+          console.log("addComment", addComment);
+          console.log("addComment._doc", addComment._doc);
 
           await Post.updateOne({ _id: postId }, { $inc: { commentsCount: 1 } });
 
@@ -173,15 +411,17 @@ const commentResolvers = {
           const updatedData = {} as Record<string, unknown>;
 
           if (comment) {
-            if (oldComment.comment === comment) {
+            if (oldComment.comment === comment && !media?.length) {
               throw new GraphQLError("you can't update comment with same", {
                 extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
               });
             }
 
-            updatedData.$set = {
-              comment,
-            };
+            if (oldComment.comment !== comment) {
+              updatedData.$set = {
+                comment,
+              };
+            }
           }
 
           if (media?.length) {
@@ -190,24 +430,9 @@ const commentResolvers = {
             };
           }
 
-          const updatedComment = await Comment.findByIdAndUpdate(
-            commentId,
-            updatedData,
-            { new: true }
-          );
+          await Comment.updateOne({ _id: commentId }, updatedData);
 
-          if (!updatedComment) {
-            throw new GraphQLError(
-              "something went wrong while updating the comment",
-              {
-                extensions: {
-                  code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
-                },
-              }
-            );
-          }
-
-          return { ...updatedComment._doc, owner: user };
+          return { message: "comment updated successfully" };
         },
       });
     },
@@ -245,15 +470,13 @@ const commentResolvers = {
 
           await Comment.deleteOne({ _id: commentId });
 
-          const updatePostCommentsCount = Post.updateOne(
-            { _id: comment.post._doc._id },
-            {
-              $inc: { commentsCount: -1 },
-            }
-          );
-
           await Promise.allSettled([
-            updatePostCommentsCount,
+            Post.updateOne(
+              { _id: comment.post._doc._id },
+              {
+                $inc: { commentsCount: -1 },
+              }
+            ),
             deleteMedia(
               comment.media.map((media: ImageType) => media.public_id)
             ),
@@ -307,21 +530,22 @@ const commentResolvers = {
             throw new GraphQLError("you can't delete other users comments");
           }
 
-          const updatedComment = await Comment.findByIdAndUpdate(
-            commentId,
-            {
-              $pull: {
-                media: {
-                  $or: publicIds.map((id) => ({ public_id: id })),
+          await Promise.allSettled([
+            deleteMedia(publicIds),
+
+            Comment.updateOne(
+              { _id: commentId },
+              {
+                $pull: {
+                  media: {
+                    $or: publicIds.map((id) => ({ public_id: id })),
+                  },
                 },
-              },
-            },
-            { new: true }
-          );
+              }
+            ),
+          ]);
 
-          await deleteMedia(publicIds);
-
-          return { ...updatedComment._doc, owner: user };
+          return { message: "media deleted successfully from the comment" };
         },
       });
     },
@@ -344,7 +568,7 @@ const commentResolvers = {
         });
       }
 
-      if (!["like", "love", "sad", "angry"].includes(reaction)) {
+      if (!flatReactions.includes(reaction)) {
         throw new GraphQLError(
           "reaction must be one of this types [like, love, sad, angry]"
         );
@@ -355,58 +579,110 @@ const commentResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while update the reaction",
         async resolveCallback(user) {
-          const comment = (await Comment.findById(commentId).populate("post"))
-            ?._doc;
+          const comment = (
+            await Comment.findById(commentId).populate({
+              path: "post",
+              select: "_id privacy owner",
+            })
+          )?._doc;
 
           const privacyChecker = checkForPrivacy(comment.post._doc, user._id);
           if (privacyChecker instanceof GraphQLError) throw privacyChecker;
 
+          const oldUserReactionPromise = await Comment.aggregate([
+            { $match: { _id: new Types.ObjectId(commentId) } },
+            {
+              $facet: {
+                like: [
+                  {
+                    $project: {
+                      like: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.like.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { like: true } },
+                ],
+                love: [
+                  {
+                    $project: {
+                      love: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.love.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { love: true } },
+                ],
+                sad: [
+                  {
+                    $project: {
+                      sad: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.sad.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { sad: true } },
+                ],
+                angry: [
+                  {
+                    $project: {
+                      angry: {
+                        $in: [
+                          new Types.ObjectId(user._id),
+                          "$reactions.angry.users",
+                        ],
+                      },
+                    },
+                  },
+                  { $match: { angry: true } },
+                ],
+              },
+            },
+          ]);
+
           const oldUserReaction = Object.entries(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (comment.reactions as any)._doc
-          ).find(
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            ([_, reactData]) =>
-              (reactData as { users: (typeof Types.ObjectId)[] }).users.some(
-                (id) => id.toString() === user._id
-              )
-          );
+            oldUserReactionPromise?.[0]
+          ).find(([key, value]) => {
+            return !!(value as unknown as Record<string, boolean>[])?.[0]?.[
+              key
+            ];
+          })?.[0];
 
           const modifyData = {
             $inc: {
               [`reactions.${reaction}.count`]:
-                oldUserReaction?.[0] === reaction ? -1 : 1,
+                oldUserReaction === reaction ? -1 : 1,
             },
 
-            [`$${oldUserReaction?.[0] === reaction ? "pull" : "push"}`]: {
+            [`$${oldUserReaction === reaction ? "pull" : "push"}`]: {
               [`reactions.${reaction}.users`]: user._id,
             },
           } as Record<string, unknown>;
 
-          if (oldUserReaction?.[0] && oldUserReaction[0] !== reaction) {
+          if (oldUserReaction && oldUserReaction !== reaction) {
             modifyData["$inc"] = {
               ...(modifyData["$inc"] as Record<string, unknown>),
-              [`reactions.${oldUserReaction[0]}.count`]: -1,
+              [`reactions.${oldUserReaction}.count`]: -1,
             };
 
             modifyData["$pull"] = {
               ...(modifyData["$pull"] as Record<string, unknown>),
-              [`reactions.${oldUserReaction[0]}.users`]: user._id,
+              [`reactions.${oldUserReaction}.users`]: user._id,
             };
           }
 
-          const updatedComment = await Comment.findByIdAndUpdate(
-            commentId,
-            modifyData,
-            {
-              new: true,
-            }
-          ).populate({
-            path: "reactions.like.users reactions.love.users reactions.angry.users reactions.sad.users",
-            select: "username profilePicture",
-          });
+          await Comment.updateOne({ _id: commentId }, modifyData);
 
-          return { ...updatedComment._doc, owner: user };
+          return { message: "reaction updated successfully" };
         },
       });
     },

@@ -400,8 +400,10 @@ const SignupPage = () => {
           key="holder-five"
           className="flex gap-10 items-stretch"
         >
-          {/* TODO: add btn to cencel profile picture */}
-          <motion.div layout className="flex-1 flex flex-col gap-2">
+          <motion.div
+            layout
+            className="flex-1 flex flex-col gap-2 p-2 bg-primary bg-opacity-30 rounded-sm"
+          >
             {profilePicture && (
               <motion.div
                 initial={{ opacity: 0, scale: 0, transformOrigin: "center" }}
@@ -435,6 +437,24 @@ const SignupPage = () => {
                 )}
                 {profilePicture ? "change" : "add"} profile picture
               </Label>
+
+              {profilePicture && (
+                <motion.div
+                  initial={{ scaleX: 0, marginTop: 0 }}
+                  animate={{ scaleX: 1, marginTop: 7 }}
+                  exit={{ scaleX: 0, marginTop: 0 }}
+                  transition={{
+                    type: "tween",
+                  }}
+                >
+                  <Button
+                    className="red-btn w-full"
+                    onClick={() => setProfilePicture(null)}
+                  >
+                    Cancel
+                  </Button>
+                </motion.div>
+              )}
             </motion.div>
 
             <input
@@ -450,8 +470,10 @@ const SignupPage = () => {
             />
           </motion.div>
 
-          {/* TODO: add btn to cencel cover picture */}
-          <motion.div layout className="flex-1 flex flex-col gap-2">
+          <motion.div
+            layout
+            className="flex-1 flex flex-col gap-2 p-2 bg-primary bg-opacity-30 rounded-sm"
+          >
             {coverPicture && (
               <motion.div
                 initial={{ opacity: 0, scale: 0, transformOrigin: "center" }}
@@ -481,6 +503,23 @@ const SignupPage = () => {
                 <FaMountainSun size={30} className="mx-auto" />
                 {coverPicture ? "change" : "add"} cover picture
               </Label>
+              {coverPicture && (
+                <motion.div
+                  initial={{ scaleX: 0, marginTop: 0 }}
+                  animate={{ scaleX: 1, marginTop: 7 }}
+                  exit={{ scaleX: 0, marginTop: 0 }}
+                  transition={{
+                    type: "tween",
+                  }}
+                >
+                  <Button
+                    className="red-btn w-full"
+                    onClick={() => setCoverPicture(null)}
+                  >
+                    Cancel
+                  </Button>
+                </motion.div>
+              )}
             </motion.div>
 
             <input

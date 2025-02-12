@@ -7,6 +7,9 @@ import Image from "next/image";
 // react
 import { useEffect, useRef, useState } from "react";
 
+// shadcn
+import { Button } from "@/components/ui/button";
+
 // components
 import Loading from "@/components/Loading";
 import IllustrationPage from "@/components/IllustrationPage";
@@ -24,7 +27,7 @@ import bookmarksSVG from "/public/illustrations/Bookmarks.svg";
 // icons
 import { FaBookmark } from "react-icons/fa";
 import { TfiNewWindow } from "react-icons/tfi";
-import { Button } from "@/components/ui/button";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 const GET_CURRENT_USER_SAVED_POSTS = gql`
   query GetUserSavedPosts($postsPaginations: PaginatedItemsInput!) {
@@ -64,7 +67,7 @@ const SavedPostsPage = () => {
   const isFinalPage = data?.getUserSavedPosts?.isFinalPage;
 
   const handleFetchMore = () => {
-    if (fetchMoreLoading || loading || isFinalPage) return;
+    if (fetchMoreLoading || loading || isFinalPage || error) return;
 
     pageAndLimit.current.page += 1;
 
@@ -117,7 +120,18 @@ const SavedPostsPage = () => {
     return (
       <IllustrationPage
         content="can't get your saved posts at the momment"
-        btn={{ type: "go-to-home" }}
+        btn={{
+          type: "custom",
+          component: (
+            <Button
+              className="mx-auto"
+              onClick={() => window.location.reload()}
+            >
+              <FaArrowRotateLeft />
+              refresh page
+            </Button>
+          ),
+        }}
         svg={_404SVG}
       />
     );
@@ -166,7 +180,9 @@ const SavedPostsPage = () => {
         ))}
       </ul>
 
-      {fetchMoreLoading && <b className="block mt-2">Loading...</b>}
+      {fetchMoreLoading && (
+        <Loading size={16} withText withFullHeight={false} />
+      )}
 
       {!isFinalPage && (
         <Button

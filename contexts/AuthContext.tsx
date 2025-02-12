@@ -13,6 +13,7 @@ import {
   type Dispatch,
   type SetStateAction,
   type ReactNode,
+  useEffect,
 } from "react";
 
 // components
@@ -133,7 +134,11 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
     return <Loading />;
   }
 
-  if (needAuthRoutes.some((route) => pathname.startsWith(route)) && !user) {
+  if (
+    (needAuthRoutes.some((route) => pathname.startsWith(route)) ||
+      pathname === "/") &&
+    !user
+  ) {
     return (
       <div className="grid place-content-center" style={{ height: "100vh" }}>
         <IllustrationPage

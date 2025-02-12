@@ -25,6 +25,7 @@ import type { NotFullUserType } from "@/lib/types";
 
 // icons
 import { FaSearch } from "react-icons/fa";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 const GET_USER_FRIENDSHIP_REQUESTS = gql`
   query GetUserFriendsRequests($requestsPagination: PaginatedItemsInput!) {
@@ -61,7 +62,7 @@ const FriendsRequestsPage = () => {
   const isFinalPage = data?.getUserFriendsRequests?.isFinalPage;
 
   const handleFetchMoreFriendshipRequests = () => {
-    if (fetchMoreLoading || loading || isFinalPage) return;
+    if (fetchMoreLoading || loading || isFinalPage || error) return;
 
     pageAndLimit.current.page += 1;
 
@@ -112,7 +113,15 @@ const FriendsRequestsPage = () => {
   if (error && !loading) {
     return (
       <IllustrationPage
-        btn={{ type: "go-to-home" }}
+        btn={{
+          type: "custom",
+          component: (
+            <Button className="mx-auto">
+              <FaArrowRotateLeft />
+              refesh page
+            </Button>
+          ),
+        }}
         content="Can't get Your friendship requests at the momment"
         svg={errorSVG}
       />
@@ -192,7 +201,9 @@ const FriendsRequestsPage = () => {
         </Button>
       )}
 
-      {fetchMoreLoading && <b>Loading...</b>}
+      {fetchMoreLoading && (
+        <Loading size={16} withText withFullHeight={false} />
+      )}
     </>
   );
 };

@@ -3,6 +3,7 @@
 // nextjs
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // react
 import { useContext, useState } from "react";
@@ -28,6 +29,7 @@ import { TiUserAdd } from "react-icons/ti";
 import { toast } from "sonner";
 
 const Header = () => {
+  const router = useRouter();
   const { user, setUser } = useContext(authContext);
   const {
     friendshipRequests: {
@@ -146,6 +148,7 @@ const Header = () => {
                   try {
                     await fetch("/api/logout");
                     setUser(null);
+                    router.push("/login");
 
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   } catch (err) {

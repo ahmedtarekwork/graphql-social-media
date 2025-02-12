@@ -14,7 +14,8 @@ import {
 } from "react";
 
 // components
-import DeleteMediaFromPostBtn from "./DeleteMediaFromPostBtn";
+import DeleteMediaFromPostOrCommentBtn from "./DeleteMediaFromPostOrCommentBtn";
+import ImageWithLoading from "../ImageWithLoading";
 
 // shadcn
 import { Button } from "@/components/ui/button";
@@ -35,21 +36,35 @@ import {
 import { FaTrash } from "react-icons/fa6";
 
 // types
-import type { ImageType } from "@/lib/types";
+import type { CommentType, ImageType } from "@/lib/types";
+import { FaClock } from "react-icons/fa";
 
 type MediaType = { file: File; id: string };
 
-type ModeType =
+type EditModeType = {
+  mode: "edit";
+  itemId: string;
+} & (
   | {
-      mode: "edit";
-      postId: string;
+      type: "post";
+      setComments?: never;
     }
   | {
+      type: "comment";
+      setComments: Dispatch<SetStateAction<CommentType[]>>;
+    }
+);
+
+type ModeType =
+  | EditModeType
+  | {
       mode: "new";
-      postId?: never;
+      itemId?: never;
+      type: "post" | "comment";
+      setComments?: never;
     };
 
-export type PostFormMediaPreviewRefType = {
+export type FormMediaPreviewRefType = {
   setMedia: Dispatch<SetStateAction<MediaType[]>>;
   media: MediaType[];
   oldMedia: ImageType[];
@@ -58,8 +73,8 @@ export type PostFormMediaPreviewRefType = {
 
 type Props = { disableBtns: boolean } & ModeType;
 
-const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
-  ({ disableBtns, postId, mode }, ref) => {
+const FormMediaPreview = forwardRef<FormMediaPreviewRefType, Props>(
+  ({ disableBtns, itemId, mode, type, setComments }, ref) => {
     const [media, setMedia] = useState<MediaType[]>([]);
     const [oldMedia, setOldMedia] = useState<ImageType[]>([]);
 
@@ -71,6 +86,13 @@ const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
 
     if (!media.length && !oldMedia.length) return;
 
+    const someOfDeleteOldMediaBtnProps =
+      type === "comment"
+        ? { type, setComments: setComments! }
+        : {
+            type,
+          };
+
     return (
       <ul className="flex flex-wrap gap-2">
         {mode === "edit" &&
@@ -79,7 +101,7 @@ const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
               key={public_id}
               className="rounded-sm shadow-md overflow-hidden border-2 border-primary p-0.5 space-y-1"
             >
-              <Image
+              <ImageWithLoading
                 src={secure_url}
                 alt={`post media No.${i + 1}`}
                 width={100}
@@ -87,11 +109,12 @@ const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
                 className="aspect-[1] object-contain"
                 priority
               />
-              <DeleteMediaFromPostBtn
+              <DeleteMediaFromPostOrCommentBtn
                 disableBtns={disableBtns}
-                postId={postId}
+                itemId={itemId}
                 setOldMedia={setOldMedia}
                 mediaId={public_id}
+                {...someOfDeleteOldMediaBtnProps}
               />
             </li>
           ))}
@@ -99,8 +122,12 @@ const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
         {media.map(({ file, id }, i) => (
           <li
             key={id}
-            className="rounded-sm shadow-md overflow-hidden border-2 border-primary p-0.5 space-y-1"
+            className="rounded-sm shadow-md overflow-hidden border-2 border-primary p-0.5 space-y-1 relative"
           >
+            <div className="bg-accent rounded-full grid place-content-center size-[22px] absolute -top-[15px] -right-[15px] border border-primary border-opacity-40">
+              <FaClock size={16} className="fill-primary" />
+            </div>
+
             <Image
               src={URL.createObjectURL(file)}
               alt={`post media No.${i + 1}`}
@@ -153,6 +180,6 @@ const PostFormMediaPreview = forwardRef<PostFormMediaPreviewRefType, Props>(
   }
 );
 
-PostFormMediaPreview.displayName = "PostFormMediaPreview";
+FormMediaPreview.displayName = "FormMediaPreview";
 
-export default memo(PostFormMediaPreview);
+export default memo(FormMediaPreview);

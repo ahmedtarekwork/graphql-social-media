@@ -1,5 +1,5 @@
 // react
-import { useRef } from "react";
+import { createRef, useEffect, useRef } from "react";
 
 // components
 // shadcn
@@ -19,25 +19,32 @@ import { reactionsInfo } from "@/constants/reactions";
 
 type Props = {
   itemId: string;
+  type: "post" | "comment";
 };
 
-const TOGGLE_REACTION = gql`
-  mutation ToggleReaction($reactionData: ToggleReactionInput!) {
-    toggleReaction(reactionData: $reactionData) {
-      message
-    }
-  }
-`;
+const ToggleReactionBtn = ({ itemId, type }: Props) => {
+  const getReactionQueryName = `getMyReactionTo${type[0].toUpperCase()}${type.slice(
+    1
+  )}`;
 
-const GET_MY_REACTION = gql`
-  query GetMyReactionToPost($postId: ID!) {
-    getMyReactionToPost(postId: $postId) {
-      reaction
+  const GET_MY_REACTION = gql`
+    query GetMyReaction($itemId: ID!) {
+      ${getReactionQueryName}(itemId: $itemId) {
+        reaction
+      }
     }
-  }
-`;
+  `;
 
-const ToggleReactionBtn = ({ itemId }: Props) => {
+  const TOGGLE_REACTION = gql`
+    mutation ToggleReaction($reactionData: ToggleReactionInput!) {
+      toggleReaction${
+        type === "comment" ? "OnComment" : ""
+      }(reactionData: $reactionData) {
+        message
+      }
+    }
+  `;
+
   const [toggleReaction, { loading }] = useMutation(TOGGLE_REACTION, {
     onCompleted(_, options) {
       updateQuery((prev) => {
@@ -46,11 +53,11 @@ const ToggleReactionBtn = ({ itemId }: Props) => {
         const isReactionRemoved = myReaction === newReaction;
 
         return {
-          getMyReactionToPost: {
-            ...prev.getMyReactionToPost,
+          [getReactionQueryName]: {
+            ...prev?.[getReactionQueryName],
             reaction: isReactionRemoved
               ? undefined
-              : newReaction || prev.getMyReactionToPost.reaction,
+              : newReaction || prev?.[getReactionQueryName].reaction,
           },
         };
       });
@@ -62,18 +69,58 @@ const ToggleReactionBtn = ({ itemId }: Props) => {
     updateQuery,
     loading: myReaectionLoading,
   } = useQuery(GET_MY_REACTION, {
-    variables: { postId: itemId },
+    variables: { itemId },
   });
 
-  const myReaction = myReactionResponse?.getMyReactionToPost?.reaction;
+  const myReaction = myReactionResponse?.[getReactionQueryName]?.reaction;
   const reactionInfo = reactionsInfo.find(({ name }) => name === myReaction);
   const Icon = reactionInfo?.Icon || AiFillLike;
+  let isTouchEvent = false;
 
   const reactionsListRef = useRef<HTMLUListElement>(null);
+  const parentHolderRef = useRef<HTMLDivElement>(null);
+  const outsideBtnRef = useRef<HTMLButtonElement>(null);
+  const reactionsBtnsRefsList = useRef(
+    reactionsInfo.map(({ name }) => ({
+      name,
+      ref: createRef<HTMLButtonElement>(),
+    }))
+  );
+
+  useEffect(() => {
+    const handleCloseReactionsList = (e: TouchEvent) => {
+      if (
+        [
+          outsideBtnRef.current,
+          parentHolderRef.current,
+          ...reactionsBtnsRefsList.current.map(({ ref }) => ref.current),
+        ].some((el) => (e.target as HTMLElement).isEqualNode(el))
+      )
+        return;
+
+      if (isTouchEvent) {
+        setTimeout(() => (isTouchEvent = false), 100);
+      }
+
+      reactionsListRef.current?.classList.add("hide-reactions-list");
+    };
+
+    window.addEventListener("touchstart", handleCloseReactionsList);
+
+    () => {
+      window.removeEventListener("touchstart", handleCloseReactionsList);
+    };
+  }, []);
 
   return (
     <div
+      ref={parentHolderRef}
       className="relative"
+      onTouchStart={() => {
+        isTouchEvent = true;
+        if (loading || myReaectionLoading) return;
+        reactionsListRef.current?.classList.remove("hide-reactions-list");
+      }}
       onMouseEnter={() => {
         if (loading || myReaectionLoading) return;
         reactionsListRef.current?.classList.remove("hide-reactions-list");
@@ -84,18 +131,30 @@ const ToggleReactionBtn = ({ itemId }: Props) => {
       }}
     >
       <Button
-        variant="ghost"
+        ref={outsideBtnRef}
+        variant={type === "post" ? "ghost" : "link"}
         className={classNames(
           "font-semibold capitalize w-full",
           `text-${reactionInfo?.color || "gray-600"}`
         )}
-        onClick={() =>
+        onTouchStart={() => {
+          isTouchEvent = true;
+          if (loading || myReaectionLoading) return;
+          reactionsListRef.current?.classList.remove("hide-reactions-list");
+        }}
+        onClick={(e) => {
+          if (isTouchEvent) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+
           toggleReaction({
             variables: {
               reactionData: { itemId, reaction: myReaction || "like" },
             },
-          })
-        }
+          });
+        }}
         disabled={loading || myReaectionLoading}
       >
         <Icon
@@ -111,9 +170,12 @@ const ToggleReactionBtn = ({ itemId }: Props) => {
 
       <ul
         ref={reactionsListRef}
-        className="origin-bottom hide-reactions-list flex-wrap absolute bottom-[90%] left-0 shadow-sm flex gap-3.5 max-w-screen w-[270px] justify-between min-w-max bg-accent rounded-[100vh] p-3 transition duration-200 border-primary border border-opacity-60"
+        className={classNames(
+          type === "comment" ? "origin-bottom-left" : "origin-bottom",
+          "hide-reactions-list flex-wrap absolute bottom-[90%] left-0 shadow-sm flex gap-3.5 max-w-screen w-[270px] justify-between min-w-max bg-accent rounded-[100vh] p-3 transition duration-200 border-primary border border-opacity-60"
+        )}
       >
-        {reactionsInfo.map(({ name, Icon, color }) => (
+        {reactionsInfo.map(({ name, Icon, color }, i) => (
           <li
             key={name}
             className={
@@ -125,8 +187,14 @@ const ToggleReactionBtn = ({ itemId }: Props) => {
             <button
               className="group"
               disabled={loading || myReaectionLoading}
-              onClick={() => {
+              ref={
+                reactionsBtnsRefsList.current.find(
+                  ({ name: refName }) => refName === name
+                )?.ref
+              }
+              onClick={(e) => {
                 reactionsListRef.current?.classList.add("hide-reactions-list");
+
                 toggleReaction({
                   variables: {
                     reactionData: { itemId, reaction: name },

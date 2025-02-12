@@ -12,6 +12,8 @@ import {
 } from "react";
 
 // components
+import ImageWithLoading from "@/components/ImageWithLoading";
+
 // shadcn
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +48,7 @@ import { toast } from "sonner";
 
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";
+import classNames from "classnames";
 
 type Props = {
   user: UserType;
@@ -66,7 +69,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
 
     const pictureName = `${pictureType}Picture` as keyof typeof user;
 
-    const UPDATE_COVER_PICTURE = gql`
+    const UPDATE_PICTURE = gql`
       mutation ChangeUserData($newUserData: ChangeUserDataInput!) {
         changeUserData(newUserData: $newUserData) {
             ${pictureName} {
@@ -78,7 +81,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
     `;
 
     const [addNewPicture, { loading: addNewPictureLoading }] = useMutation(
-      UPDATE_COVER_PICTURE,
+      UPDATE_PICTURE,
       {
         onCompleted(data) {
           const newPicture = data.changeUserData?.[pictureName];
@@ -134,7 +137,12 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
       if (newPicture) {
         return (
           <div className="flex flex-col items-center justify-center">
-            <div className="relative h-[150px] w-[150px] p-1 bg-gradient-to-b from-white to-primary rounded-full">
+            <div
+              className={classNames(
+                pictureType === "profile" ? "w-[150px]" : "w-full",
+                "relative h-[150px] p-1 bg-gradient-to-b from-white to-primary rounded-full"
+              )}
+            >
               <Image
                 src={URL.createObjectURL(newPicture)}
                 {...imageProps}
@@ -252,21 +260,23 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
       return (
         <Dialog>
           <DialogTrigger
-            className={`${
+            className={classNames(
               pictureType === "cover"
                 ? "w-full"
-                : "p-1 bg-gradient-to-b from-white to-primary rounded-full w-[150px]"
-            } h-[150px] relative group`}
+                : "p-1 bg-gradient-to-b from-white to-primary rounded-full w-[150px]",
+              "h-[150px] relative group"
+            )}
           >
             <div
-              className={`${
-                pictureType === "profile" ? "rounded-full " : ""
-              }absolute z-10 bg-black bg-opacity-60 inset-0 grid place-content-center opacity-0 transition duration-200 pointer-events-none group-hover:opacity-100`}
+              className={classNames(
+                pictureType === "profile" ? "rounded-full" : "",
+                "absolute z-10 bg-black bg-opacity-60 inset-0 grid place-content-center opacity-0 transition duration-200 pointer-events-none group-hover:opacity-100"
+              )}
             >
               <FaEye size={25} fill="white" />
             </div>
 
-            <Image
+            <ImageWithLoading
               src={(user[pictureName] as ImageType).secure_url}
               {...imageProps}
               alt={`${pictureType} picture`}
@@ -282,8 +292,8 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                 <DialogTitle>{pictureType} picture</DialogTitle>
               </VisuallyHidden>
 
-              <DialogDescription>
-                <Image
+              <DialogDescription className="relative h-full">
+                <ImageWithLoading
                   src={(user[pictureName] as ImageType)?.secure_url}
                   fill
                   className="object-contain aspect-[1]"

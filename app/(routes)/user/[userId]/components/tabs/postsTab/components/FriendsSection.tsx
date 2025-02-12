@@ -10,6 +10,8 @@ import { memo, useContext, useEffect, useState } from "react";
 import { authContext } from "@/contexts/AuthContext";
 
 // components
+import Loading from "@/components/Loading";
+
 // shadcn
 import { Button } from "@/components/ui/button";
 
@@ -128,9 +130,9 @@ const FriendsSection = () => {
         </ul>
       )}
 
-      {friendsLoading && <p>Loading...</p>}
+      {friendsLoading && <Loading size={16} withText withFullHeight={false} />}
       {friendsErr && !friendsLoading && (
-        <p>
+        <p className="text-center">
           can{"'"}t get {isCurrentUserProfile ? "your" : "this user"} friends at
           the momment
         </p>

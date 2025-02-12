@@ -9,6 +9,9 @@ import checkForPostPrivacy from "@/lib/checkForPostPrivacy";
 import { deleteMedia } from "@/lib/utils";
 import { Types } from "mongoose";
 
+// constants
+import { flatReactions } from "@/constants/reactions";
+
 // models
 import Post from "../_models/post.model";
 import User from "../_models/user.model";
@@ -174,7 +177,7 @@ const postResolvers = {
           const count = posts?.[0]?.metadata?.[0]?.total;
 
           return {
-            isFinalPage: (page - 1) * limit >= count || 0,
+            isFinalPage: page * limit >= count || 0,
             posts: posts?.[0]?.posts || [],
           };
         },
@@ -298,7 +301,10 @@ const postResolvers = {
                       "postInfo.isShared": {
                         $cond: {
                           if: {
-                            $in: ["$postInfo._id", "$postOwner.sharedPosts"],
+                            $in: [
+                              "$postInfo._id",
+                              "$authUserDetails.sharedPosts",
+                            ],
                           },
                           then: true,
                           else: false,
@@ -353,7 +359,23 @@ const postResolvers = {
 
           const allPostsCount =
             posts?.[0]?.userPostsCount?.[0]?.userPostsCount || 0;
-          const userPosts = posts?.[0]?.userPosts?.[0]?.allPosts || [];
+          const userPosts =
+            posts?.[0]?.userPosts?.[0]?.allPosts?.map((post: PostType) => {
+              if (post.isShared) {
+                return {
+                  ...post,
+                  sharePerson: JSON.parse(
+                    JSON.stringify(authUser, [
+                      "_id",
+                      "username",
+                      "profilePicture",
+                    ])
+                  ),
+                };
+              }
+
+              return post;
+            }) || [];
 
           return {
             posts: userPosts,
@@ -509,6 +531,24 @@ const postResolvers = {
                     : []),
 
                   {
+                    $addFields: {
+                      "postInfo.sharePerson": {
+                        $cond: {
+                          if: {
+                            $in: ["$postInfo._id", "$sharedPosts"],
+                          },
+                          then: {
+                            username: "$username",
+                            _id: "$_id",
+                            profilePicture: "$profilePicture",
+                          },
+                          else: null,
+                        },
+                      },
+                    },
+                  },
+
+                  {
                     $project: {
                       _id: 0,
                       postInfo: {
@@ -535,6 +575,7 @@ const postResolvers = {
                         shareDate: "$allPosts.shareDate",
                         isInBookMark: user?._id ? 1 : false,
                         isShared: user?._id ? 1 : false,
+                        sharePerson: 1,
                       },
                     },
                   },
@@ -760,10 +801,15 @@ const postResolvers = {
     getPostReactions: async (
       _: unknown,
       {
-        reactionsInfo: { postId, limit = 0, page = 1, reaction = "like" },
+        reactionsInfo: {
+          itemId: postId,
+          limit = 0,
+          page = 1,
+          reaction = "like",
+        },
       }: {
         reactionsInfo: Pagination<{
-          postId: string;
+          itemId: string;
           reaction: keyof ReactionsType;
         }>;
       }
@@ -847,7 +893,7 @@ const postResolvers = {
 
     getMyReactionToPost: async (
       _: unknown,
-      { postId }: { postId: string },
+      { itemId: postId }: { itemId: string },
       { req }: APIContextFnType
     ) => {
       return await handleConnectDB({
@@ -1211,18 +1257,6 @@ const postResolvers = {
             },
             { new: true }
           );
-          // .populate("owner")
-
-          // if (!newPostData) {
-          //   throw new GraphQLError(
-          //     "something went wrong while updating the post",
-          //     {
-          //       extensions: {
-          //         code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
-          //       },
-          //     }
-          //   );
-          // }
 
           return { message: "post updated successfully" };
         },
@@ -1457,7 +1491,7 @@ const postResolvers = {
         });
       }
 
-      if (!["like", "love", "sad", "angry"].includes(reaction)) {
+      if (!flatReactions.includes(reaction)) {
         throw new GraphQLError(
           "reaction must be one of these reaction [like, love, sad, angry]",
           { extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT } }

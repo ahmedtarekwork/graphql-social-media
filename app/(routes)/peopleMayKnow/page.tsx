@@ -22,6 +22,7 @@ import buzzleSVG from "/public/illustrations/buzzle.svg";
 
 // types
 import type { NotFullUserType } from "@/lib/types";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 const GET_PEOPLE = gql`
   query GetAllUsers($wantedUsers: PaginatedItemsInput!) {
@@ -62,7 +63,18 @@ const PeopleMayKnowPage = () => {
     return (
       <IllustrationPage
         content="can't get people at the momment!"
-        btn={{ type: "go-to-home" }}
+        btn={{
+          type: "custom",
+          component: (
+            <Button
+              className="mx-auto"
+              onClick={() => window.location.reload()}
+            >
+              <FaArrowRotateLeft />
+              refresh page
+            </Button>
+          ),
+        }}
         svg={worldSVG}
       />
     );
@@ -140,7 +152,9 @@ const PeopleMayKnowPage = () => {
           See more
         </Button>
       )}
-      {fetchMoreLoading && <b>Loading...</b>}
+      {fetchMoreLoading && (
+        <Loading size={16} withText withFullHeight={false} />
+      )}
     </div>
   );
 };

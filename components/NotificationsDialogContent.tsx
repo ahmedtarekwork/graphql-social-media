@@ -17,6 +17,7 @@ import { userNotificationsCountContext } from "@/contexts/UserNotificationsCount
 
 // components
 import Loading from "./Loading";
+import IllustrationPage from "./IllustrationPage";
 
 // shadcn
 import { Button } from "./ui/button";
@@ -36,11 +37,15 @@ import { gql, useMutation, useQuery } from "@apollo/client";
 // icons
 import { FaCheckCircle, FaUserFriends } from "react-icons/fa";
 import { MdNotificationsActive } from "react-icons/md";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // utils
 import { toast } from "sonner";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en";
+
+// SVGs
+import _404 from "/public/illustrations/404.svg";
 
 type Props = {
   setOpenDialog: Dispatch<SetStateAction<boolean>>;
@@ -164,7 +169,7 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
   const isFinalPage = data?.getUserNotifications?.isFinalPage;
 
   const handleFetchMore = () => {
-    if (isFinalPage || loading || fetchMoreLoading) return;
+    if (isFinalPage || loading || fetchMoreLoading || error) return;
 
     pageAndLimit.current.page += 1;
 
@@ -220,6 +225,25 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
 
         {loading && <Loading />}
 
+        {error && !loading && (
+          <IllustrationPage
+            svg={_404}
+            content="can't get your notifications at the momment"
+            btn={{
+              type: "custom",
+              component: (
+                <Button
+                  className="mx-auto"
+                  onClick={() => window.location.reload()}
+                >
+                  <FaArrowRotateLeft />
+                  refresh page
+                </Button>
+              ),
+            }}
+          />
+        )}
+
         {!notifications.length && !error && !loading && (
           <b>You don{"'"}t have any notifications.</b>
         )}
@@ -274,7 +298,9 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
               )}
             </ul>
 
-            {fetchMoreLoading && <b>Loading...</b>}
+            {fetchMoreLoading && (
+              <Loading size={16} withText withFullHeight={false} />
+            )}
 
             {!isFinalPage && (
               <Button
@@ -288,9 +314,8 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
           </>
         )}
 
-        {fetchMoreLoading && <b>Loading...</b>}
-        {error && !loading && (
-          <b>can{"'"}t get your notifications at the momment</b>
+        {fetchMoreLoading && (
+          <Loading size={16} withText withFullHeight={false} />
         )}
       </DialogHeader>
     </DialogContent>

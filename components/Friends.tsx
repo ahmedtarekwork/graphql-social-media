@@ -16,6 +16,7 @@ import { Button } from "./ui/button";
 
 // icons
 import { FaExternalLinkAlt } from "react-icons/fa";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // types
 import type { NotFullUserType } from "@/lib/types";
@@ -68,7 +69,18 @@ const Friends = ({ userId, mode }: Props) => {
           isCurrentUserProfile ? "your" : "this user"
         } friends at the momment.`}
         svg={errorLaptopSVG}
-        btn={{ type: "custom", component: <></> }}
+        btn={{
+          type: "custom",
+          component: (
+            <Button
+              className="mx-auto"
+              onClick={() => window.location.reload()}
+            >
+              <FaArrowRotateLeft />
+              refresh page
+            </Button>
+          ),
+        }}
       />
     );
   }
@@ -154,7 +166,9 @@ const Friends = ({ userId, mode }: Props) => {
         </Button>
       )}
 
-      {fetchMoreLoading && <p>Loading...</p>}
+      {fetchMoreLoading && (
+        <Loading size={16} withText withFullHeight={false} />
+      )}
     </>
   );
 };

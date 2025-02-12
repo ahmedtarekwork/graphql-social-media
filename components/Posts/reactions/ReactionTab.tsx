@@ -20,6 +20,7 @@ import type { NotFullUserType, ReactionsType } from "@/lib/types";
 
 // icons
 import { FaUser } from "react-icons/fa";
+import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // SVGs
 import _404SVG from "/public/illustrations/404-laptop.svg";
@@ -29,24 +30,27 @@ type Props = {
   itemId: string;
   reaction: keyof ReactionsType;
   activeReaction: keyof ReactionsType;
+  type: "post" | "comment";
 };
 
-const GET_ITEM_SINGLE_REACTION = gql`
-  query GetPostReactions($reactionsInfo: GetPostReactionsInput!) {
-    getPostReactions(reactionsInfo: $reactionsInfo) {
-      isFinalPage
-      reactions {
-        _id
-        username
-        profilePicture {
-          secure_url
+const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
+  const queryName = `get${type[0].toUpperCase()}${type.slice(1)}Reactions`;
+
+  const GET_ITEM_SINGLE_REACTION = gql`
+    query GetReactions($reactionsInfo: GetItemReactionsInput!) {
+      ${queryName}(reactionsInfo: $reactionsInfo) {
+        isFinalPage
+        reactions {
+          _id
+          username
+          profilePicture {
+            secure_url
+          }
         }
       }
     }
-  }
-`;
+  `;
 
-const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
   const [initFetch, setInitFetch] = useState(false);
   const [fetchMoreLoading, setFetchMoreLoading] = useState(false);
   const pageAndLimit = useRef({
@@ -56,7 +60,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
 
   const queryVariables = () => ({
     reactionsInfo: {
-      postId: itemId,
+      itemId,
       reaction,
       ...pageAndLimit.current,
     },
@@ -72,10 +76,9 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
     }
   );
 
-  const reactions = (data?.getPostReactions?.reactions ||
-    []) as NotFullUserType[];
+  const reactions = (data?.[queryName]?.reactions || []) as NotFullUserType[];
 
-  const isFinalPage = data?.getPostReactions?.isFinalPage;
+  const isFinalPage = data?.[queryName]?.isFinalPage;
 
   useEffect(() => {
     if (!initFetch && activeReaction === reaction) getReactionUsers();
@@ -100,7 +103,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
   }, []);
 
   const handleFetchMore = () => {
-    if (fetchMoreLoading || loading || isFinalPage) return;
+    if (fetchMoreLoading || loading || isFinalPage || error) return;
 
     pageAndLimit.current.page += 1;
 
@@ -113,12 +116,12 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
         if (!fetchMoreResult) return data;
 
         return {
-          getPostReactions: {
+          [queryName]: {
             reactions: [
               ...reactions,
-              ...(fetchMoreResult?.getPostReactions?.reactions || []),
+              ...(fetchMoreResult?.[queryName]?.reactions || []),
             ],
-            isFinalPage: !!fetchMoreResult?.getPostReactions?.isFinalPage,
+            isFinalPage: !!fetchMoreResult?.[queryName]?.isFinalPage,
           },
         };
       },
@@ -130,16 +133,27 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
   if (!loading && error && !reactions.length) {
     return (
       <IllustrationPage
-        content={`can't get ${reaction} users of this post`}
+        content={`can't get ${reaction} users of this ${type}`}
         svg={_404SVG}
-        btn={{ type: "custom", component: <></> }}
+        btn={{
+          type: "custom",
+          component: (
+            <Button
+              className="mx-auto"
+              onClick={() => window.location.reload()}
+            >
+              <FaArrowRotateLeft />
+              refresh page
+            </Button>
+          ),
+        }}
       />
     );
   }
   if (!reactions.length && !loading && !error) {
     return (
       <IllustrationPage
-        content="this post doesn't have users react with this reaction"
+        content={`this ${type} doesn't have users react with this reaction`}
         btn={{ type: "custom", component: <></> }}
         svg={searchSVG}
       />
@@ -148,7 +162,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction }: Props) => {
 
   return (
     <>
-      <ul>
+      <ul className="space-y-2">
         {reactions.map(({ _id, username, profilePicture }, i) => (
           <li key={_id}>
             <Link

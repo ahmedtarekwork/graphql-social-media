@@ -57,6 +57,7 @@ const publicTypeDefs = gql`
     shareDate: String!
     isInBookMark: Boolean!
     isShared: Boolean!
+    sharePerson: NotFullUser
   }
 
   type SharePostData {
@@ -110,7 +111,6 @@ const publicTypeDefs = gql`
   }
   type RecationType {
     count: Int!
-    # users: [NotFullUser!]!
   }
 
   enum Reactions {
@@ -143,6 +143,22 @@ const publicTypeDefs = gql`
   input PaginatedItemsInput {
     page: Int!
     limit: Int!
+  }
+
+  input GetItemReactionsInput {
+    itemId: ID!
+    limit: Int!
+    page: Int!
+    reaction: Reactions!
+  }
+
+  type GetItemReactionsResponseType {
+    reactions: [NotFullUser!]!
+    isFinalPage: Boolean!
+  }
+
+  type GetMyReactionToItemResponseType {
+    reaction: Reactions
   }
 `;
 
