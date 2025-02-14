@@ -23,7 +23,7 @@ import { FaUser } from "react-icons/fa";
 import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // SVGs
-import _404SVG from "/public/illustrations/404-laptop.svg";
+import _404SVG from "/public/illustrations/error-laptop.svg";
 import searchSVG from "/public/illustrations/search.svg";
 
 type Props = {

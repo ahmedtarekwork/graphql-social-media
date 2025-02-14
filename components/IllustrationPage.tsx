@@ -36,7 +36,7 @@ const IllustrationPage = ({ content, svg, btn }: Props) => {
     <>
       <Image
         src={svg}
-        alt="id-not-found illustrations"
+        alt="illustration"
         width={300}
         height={300}
         className="max-h-[300px] max-w-full mx-auto"

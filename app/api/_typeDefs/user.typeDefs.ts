@@ -45,6 +45,7 @@ const userTypeDefs = gql`
     getuserAdminPages(
       pagesPagination: PaginatedItemsInput!
     ): [NotFullPageOrGroup!]!
+    IsUserFollowThisPage(pageId: ID!): IsUserFollowThisPageResponse!
 
     # groups
     getUserJoinedGroups(
@@ -87,6 +88,10 @@ const userTypeDefs = gql`
     page: Int!
     limit: Int!
     userId: ID!
+  }
+
+  type IsUserFollowThisPageResponse {
+    isFollow: Boolean!
   }
 
   type SavedPostType {

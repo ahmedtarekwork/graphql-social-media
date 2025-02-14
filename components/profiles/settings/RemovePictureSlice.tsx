@@ -34,7 +34,7 @@ type Props = {
   pictureType: "cover" | "profile";
 };
 
-const RemovePictureSettingTabSlice = ({ pictureType }: Props) => {
+const RemovePictureSlice = ({ pictureType }: Props) => {
   const { user, setUser } = useContext(authContext);
 
   const REMOVE_PICTURE = gql`
@@ -113,4 +113,4 @@ const RemovePictureSettingTabSlice = ({ pictureType }: Props) => {
     </div>
   );
 };
-export default RemovePictureSettingTabSlice;
+export default RemovePictureSlice;

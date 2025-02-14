@@ -31,7 +31,15 @@ const Loading = ({
             fill === "white" ? "border-white" : "border-primary"
           } border-t-transparent rounded-full`}
         />
-        {withText && <b className="text-primary">{text}</b>}
+        {withText && (
+          <b
+            className={classNames(
+              fill === "white" ? "text-white" : "text-primary"
+            )}
+          >
+            {text}
+          </b>
+        )}
       </div>
     </div>
   );

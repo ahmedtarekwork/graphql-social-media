@@ -94,7 +94,7 @@ body {
     @apply overflow-hidden;
   }
 
-  input {
+  /* input {
     &::placeholder {
       @apply transition duration-200;
     }
@@ -102,7 +102,7 @@ body {
     &:focus::placeholder {
       @apply opacity-0;
     }
-  }
+  } */
 
   svg {
     width: unset !important;

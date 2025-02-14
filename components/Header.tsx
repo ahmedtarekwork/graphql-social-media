@@ -46,7 +46,7 @@ const Header = () => {
 
   const [openDialog, setOpenDialog] = useState(false);
 
-  // console.log(user);
+  console.log(user);
 
   return (
     <header id="app-header" className="bg-primary bg-opacity-[42%]">
@@ -134,10 +134,10 @@ const Header = () => {
                     alt="profile picture"
                     width={50}
                     height={50}
-                    className="rounded-full"
+                    className="rounded-full aspect-[1] object-cover"
                   />
                 ) : (
-                  <FaUser className="!w-[30px] !h-[30px] fill-secondary" />
+                  <FaUser size={30} className="fill-secondary" />
                 )}
               </Link>
 

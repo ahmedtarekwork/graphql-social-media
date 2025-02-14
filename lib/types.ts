@@ -1,6 +1,9 @@
+import { useQuery } from "@apollo/client";
 import { Types } from "mongoose";
 
 import type { NextRequest } from "next/server";
+
+export type ReturnTypeOfUseQuery = ReturnType<typeof useQuery>;
 
 export type PostsResponse = { posts: PostType[]; isFinalPage: boolean };
 

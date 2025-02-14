@@ -26,7 +26,10 @@ const pageResolvers = {
       return await handleConnectDB({
         publicErrorMsg: "can't get page info at the momment",
         async resolveCallback() {
-          const page = await Page.findById(pageId);
+          const page = await Page.findById(pageId).populate({
+            path: "owner",
+            select: "_id",
+          });
 
           if (!page) {
             throw new GraphQLError("page with given id not found", {
@@ -346,15 +349,15 @@ const pageResolvers = {
             });
           }
 
-          const newPageData = (
-            await Page.findByIdAndUpdate(
-              editPageData.pageId,
-              { $set: editPageData },
-              { new: true }
-            )
-          )?._doc;
+          // const newPageData = (
+          await Page.updateOne(
+            { _id: editPageData.pageId },
+            { $set: editPageData }
+            // { new: true }
+          );
+          // )?._doc;
 
-          return newPageData;
+          return { message: "page updated successfully" };
         },
       });
     },

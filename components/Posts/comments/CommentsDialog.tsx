@@ -50,7 +50,7 @@ import {
 import { gql, useQuery } from "@apollo/client";
 
 // SVGs
-import _404SVG from "/public/illustrations/404-laptop.svg";
+import _404SVG from "/public/illustrations/error-laptop.svg";
 import commentsSVG from "/public/illustrations/comments.svg";
 
 // types

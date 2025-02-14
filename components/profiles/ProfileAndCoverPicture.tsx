@@ -1,8 +1,10 @@
 // nextjs
 import Image from "next/image";
+import { useParams } from "next/navigation";
 
 import {
   forwardRef,
+  useContext,
   useImperativeHandle,
   useState,
 
@@ -10,6 +12,9 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+
+// contexts
+import { authContext } from "@/contexts/AuthContext";
 
 // components
 import ImageWithLoading from "@/components/ImageWithLoading";
@@ -32,29 +37,51 @@ import {
   FaTimesCircle,
   FaEye,
   FaArrowCircleUp,
+  FaFlag,
 } from "react-icons/fa";
 import { BsPersonPlusFill } from "react-icons/bs";
 import { IoMdPerson } from "react-icons/io";
 
 // types
-import type { ImageType, UserType } from "@/lib/types";
+import type {
+  GroupType,
+  ImageType,
+  PageType,
+  ReturnTypeOfUseQuery,
+  UserType,
+} from "@/lib/types";
 
 // gql
-import { gql, useMutation } from "@apollo/client";
+import { type DocumentNode, gql, useMutation } from "@apollo/client";
 
 // utils
 import { updateMedia, uploadMedia } from "@/lib/utils";
 import { toast } from "sonner";
+import classNames from "classnames";
 
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";
-import classNames from "classnames";
+
+export type ProfileAndCoverPictureOptionalProps =
+  | {
+      profileType: "personal";
+      profileInfo: UserType;
+      updateQuery?: never;
+    }
+  | {
+      profileType: "page";
+      profileInfo: PageType;
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+    }
+  | {
+      profileType: "group";
+      profileInfo: GroupType;
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+    };
 
 type Props = {
-  user: UserType;
-  setUser: Dispatch<SetStateAction<UserType | null>>;
   pictureType: "profile" | "cover";
-};
+} & ProfileAndCoverPictureOptionalProps;
 
 type ModesType = "firstTime" | "update";
 
@@ -64,12 +91,19 @@ export type ProfileAndCoverPictureRefType = {
 };
 
 const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
-  ({ setUser, user, pictureType }, ref) => {
+  ({ pictureType, profileType, profileInfo, updateQuery }, ref) => {
+    const pageId = (useParams()?.pageId || "") as string;
+
+    const { user, setUser } = useContext(authContext);
     const isCurrentUserProfile = useIsCurrentUserProfile();
 
-    const pictureName = `${pictureType}Picture` as keyof typeof user;
+    const pictureName = `${pictureType}Picture` as keyof typeof profileInfo;
 
-    const UPDATE_PICTURE = gql`
+    let hasAccessToChangePicture = false;
+    let NoProfilePictureIcon = IoMdPerson;
+    let query: DocumentNode;
+
+    const UPDATE_PERSONAL_PICTURE = gql`
       mutation ChangeUserData($newUserData: ChangeUserDataInput!) {
         changeUserData(newUserData: $newUserData) {
             ${pictureName} {
@@ -79,29 +113,90 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         }
       }
     `;
+    const UPDATE_PAGE_PICTURE = gql`
+      mutation ChangePageInfo($editPageData: EditPageInput!) {
+        editPage(editPageData: $editPageData) {
+          message
+        }
+      }
+    `;
 
-    const [addNewPicture, { loading: addNewPictureLoading }] = useMutation(
-      UPDATE_PICTURE,
-      {
-        onCompleted(data) {
-          const newPicture = data.changeUserData?.[pictureName];
+    switch (profileType) {
+      case "personal": {
+        if (isCurrentUserProfile) hasAccessToChangePicture = true;
+        query = UPDATE_PERSONAL_PICTURE;
 
-          if (newPicture) {
-            setUser((prev) => ({
-              ...(prev as unknown as UserType),
-              [pictureName]: {
-                public_id: newPicture.public_id,
-                secure_url: newPicture.secure_url,
-              },
-            }));
-            setNewPicture(null);
-            if (mode !== "firstTime") setMode("firstTime");
-          } else {
-            toast.error(
-              `something went wrong while uploading your new ${pictureType} picture`,
-              { duration: 9000 }
-            );
+        break;
+      }
+      case "page": {
+        if (profileInfo.owner._id.toString() === user?._id.toString())
+          hasAccessToChangePicture = true;
+
+        if (!profileInfo.profilePicture) NoProfilePictureIcon = FaFlag;
+
+        query = UPDATE_PAGE_PICTURE;
+        break;
+      }
+      case "group": {
+        query = UPDATE_PAGE_PICTURE;
+
+        // if (pageInfo.owner._id.toString() === user?._id.toString())
+        //   hasAccessToChangePicture = true;
+
+        // if (!pageInfo.profilePicture) NoProfilePictureIcon = FaFlag;
+
+        // TiGroup
+
+        break;
+      }
+    }
+
+    const [uploadProfileOrCoverPicture, { loading: updatePictureLoading }] =
+      useMutation(query, {
+        onCompleted(data, options) {
+          const newValues = options?.variables?.editPageData;
+
+          switch (profileType) {
+            case "personal": {
+              const newPicture = data?.changeUserData?.[pictureName];
+              console.log(newPicture);
+
+              if (newPicture) {
+                setUser((prev) => ({
+                  ...(prev as unknown as UserType),
+                  [pictureName]: {
+                    public_id: newPicture.public_id,
+                    secure_url: newPicture.secure_url,
+                  },
+                }));
+              }
+              break;
+            }
+
+            case "page": {
+              updateQuery((prev) => {
+                return {
+                  ...prev!,
+                  getPageInfo: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ...(prev as any)!.getPageInfo,
+                    [pictureName]: {
+                      public_id: newValues[pictureName].public_id,
+                      secure_url: newValues[pictureName].secure_url,
+                    },
+                  },
+                };
+              });
+              break;
+            }
           }
+
+          setNewPicture(null);
+          if (mode !== "firstTime") setMode("firstTime");
+
+          toast.success(`${pictureType} picture uploaded successfully`, {
+            duration: 9000,
+          });
         },
         onError(error) {
           console.log(error);
@@ -110,14 +205,13 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             { duration: 9000 }
           );
         },
-      }
-    );
+      });
 
     const [newPicture, setNewPicture] = useState<File | null>(null);
     const [disableBtns, setDisableBtns] = useState(false);
     const [mode, setMode] = useState<ModesType>("firstTime");
 
-    const loading = disableBtns || addNewPictureLoading;
+    const loading = disableBtns || updatePictureLoading;
 
     useImperativeHandle(ref, () => ({ setNewPicture, setMode }), []);
 
@@ -133,7 +227,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             className: "rounded-full aspect-[1] object-cover w-full h-full",
           };
 
-    if (isCurrentUserProfile) {
+    if (hasAccessToChangePicture) {
       if (newPicture) {
         return (
           <div className="flex flex-col items-center justify-center">
@@ -157,7 +251,9 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                   try {
                     setDisableBtns(true);
                     const promise = () => {
-                      const oldImg = user[pictureName] as ImageType;
+                      const oldImg = profileInfo?.[pictureName] as
+                        | ImageType
+                        | undefined;
 
                       return mode === "update" && oldImg?.public_id
                         ? updateMedia([
@@ -168,17 +264,43 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
 
                     const newImg = await promise();
 
-                    addNewPicture({
-                      variables: {
-                        newUserData: {
-                          [pictureName]: newImg[0],
-                        },
-                      },
-                    });
+                    let variables: Record<string, unknown>;
+
+                    switch (profileType) {
+                      case "personal": {
+                        variables = {
+                          newUserData: {
+                            [pictureName]: newImg[0],
+                          },
+                        };
+                        break;
+                      }
+                      case "page": {
+                        variables = {
+                          editPageData: {
+                            pageId,
+                            [pictureName]: newImg[0],
+                          },
+                        };
+                        break;
+                      }
+                      case "group": {
+                        variables = {
+                          newUserData: {
+                            [pictureName]: newImg[0],
+                          },
+                        };
+                        break;
+                      }
+                    }
+
+                    uploadProfileOrCoverPicture({ variables });
                   } catch (err) {
                     console.log(err);
                     toast.error(
-                      `something went wrong while upload your new ${pictureType} picture`,
+                      `something went wrong while upload ${
+                        profileType === "personal" ? "your" : "the"
+                      } new ${pictureType} picture`,
                       { duration: 9000 }
                     );
                   } finally {
@@ -215,7 +337,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         );
       }
 
-      if (!user[pictureName]) {
+      if (!profileInfo?.[pictureName]) {
         return (
           <>
             <input
@@ -256,7 +378,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
       }
     }
 
-    if (user[pictureName]) {
+    if (profileInfo?.[pictureName]) {
       return (
         <Dialog>
           <DialogTrigger
@@ -277,10 +399,12 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             </div>
 
             <ImageWithLoading
-              src={(user[pictureName] as ImageType).secure_url}
+              src={(profileInfo[pictureName] as ImageType).secure_url}
               {...imageProps}
               alt={`${pictureType} picture`}
+              customSize={100}
               priority
+              spinnerFill={pictureType === "cover" ? "primary" : "white"}
             />
           </DialogTrigger>
           <DialogContent
@@ -290,16 +414,18 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             <DialogHeader>
               <VisuallyHidden>
                 <DialogTitle>{pictureType} picture</DialogTitle>
+                <DialogDescription>{pictureType} picture</DialogDescription>
               </VisuallyHidden>
 
-              <DialogDescription className="relative h-full">
+              <div className="relative h-full">
                 <ImageWithLoading
-                  src={(user[pictureName] as ImageType)?.secure_url}
+                  src={(profileInfo[pictureName] as ImageType)?.secure_url}
                   fill
                   className="object-contain aspect-[1]"
                   alt={`${pictureType} picture`}
+                  spinnerFill="white"
                 />
-              </DialogDescription>
+              </div>
             </DialogHeader>
           </DialogContent>
         </Dialog>
@@ -316,7 +442,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
 
     return (
       <div className="border-[3px] shadow-sm shadow-primary border-white max-w-[130px] w-[130px] max-h-[130px] h-[130px] p-4 bg-primary rounded-full">
-        <IoMdPerson className="text-white block !w-full !h-full" />
+        <NoProfilePictureIcon className="text-white block !w-full !h-full" />
       </div>
     );
   }

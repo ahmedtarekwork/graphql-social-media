@@ -22,8 +22,8 @@ import { FaArrowRotateLeft } from "react-icons/fa6";
 import type { NotFullUserType } from "@/lib/types";
 
 // SVGs
-import emptySVG from "/public/illustrations/empty.svg";
-import errorLaptopSVG from "/public/illustrations/404-laptop.svg";
+import emptySVG from "/public/illustrations/search.svg";
+import errorLaptopSVG from "/public/illustrations/error-laptop.svg";
 
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";

@@ -1,3 +1,6 @@
+// nextjs
+import { useParams } from "next/navigation";
+
 // react
 import { useRef, useState, useContext } from "react";
 
@@ -13,24 +16,43 @@ import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { HiSwitchHorizontal } from "react-icons/hi";
 
 // types
-import type { UserType } from "@/lib/types";
+import type { ReturnTypeOfUseQuery } from "@/lib/types";
 
 // gql
-import { gql, useMutation } from "@apollo/client";
+import { DocumentNode, gql, useMutation } from "@apollo/client";
 
 // utils
 import { toast } from "sonner";
 
+type ProfileType =
+  | {
+      profileType: "personal";
+      updateQuery?: never;
+    }
+  | {
+      profileType: "page";
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+    }
+  | {
+      profileType: "group";
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+    };
+
 type Props = {
   settingName: string;
   settingValue: string;
-};
+} & ProfileType;
 
-const SettingSlice = ({ settingName, settingValue }: Props) => {
+const SettingSlice = ({
+  settingName,
+  settingValue,
+  profileType,
+  updateQuery,
+}: Props) => {
+  const pageId = (useParams()?.pageId || "") as string;
+
   const { setUser } = useContext(authContext);
-
   const [activeInput, setActiveInput] = useState(false);
-
   const newValueInputRef = useRef<HTMLInputElement>(null);
 
   const UPDATE_USER_INFO = gql`
@@ -40,57 +62,111 @@ const SettingSlice = ({ settingName, settingValue }: Props) => {
       }
     }
   `;
-
-  const [updateUserInfo, { loading: updateUserInfoLoading }] = useMutation(
-    UPDATE_USER_INFO,
-    {
-      onCompleted(data) {
-        if (data.changeUserData) {
-          const newInfo = data.changeUserData[settingName];
-
-          setUser((prev) => ({
-            ...(prev as unknown as UserType),
-            [settingName]: newInfo,
-          }));
-
-          setActiveInput(false);
-        } else {
-          toast.error(
-            `something went wrong while updating your ${settingName}`,
-            { duration: 9000 }
-          );
-        }
-      },
-      onError(error) {
-        console.log(error);
-        toast.error(`something went wrong while updating your ${settingName}`, {
-          duration: 9000,
-        });
-      },
+  const UPDATE_PAGE_INFO = gql`
+    mutation ChangePageInfo($editPageData: EditPageInput!) {
+      editPage(editPageData: $editPageData) {
+        message
+      }
     }
-  );
+  `;
+
+  let query: DocumentNode;
+  let queryName: string;
+
+  switch (profileType) {
+    case "personal": {
+      query = UPDATE_USER_INFO;
+      queryName = "changeUserData";
+      break;
+    }
+    case "page": {
+      query = UPDATE_PAGE_INFO;
+      queryName = "editPage";
+      break;
+    }
+    case "group": {
+      query = UPDATE_PAGE_INFO;
+      break;
+    }
+  }
+
+  const [updateProfileInfo, { loading }] = useMutation(query, {
+    onCompleted(data, options) {
+      if (data?.[queryName]) {
+        const newInfo = data?.[queryName]?.[settingName];
+
+        const newValues =
+          options?.variables?.[profileType === "page" ? "editPageData" : ""];
+
+        switch (profileType) {
+          case "personal": {
+            setUser((prev) => ({
+              ...prev!,
+              [settingName]: newInfo,
+            }));
+            break;
+          }
+          case "page": {
+            updateQuery?.((prev) => {
+              return {
+                ...prev!,
+                getPageInfo: {
+                  ...(prev as any)!.getPageInfo,
+                  [settingName]: newValues[settingName],
+                },
+              };
+            });
+            break;
+          }
+        }
+
+        setActiveInput(false);
+      }
+
+      toast.success(
+        profileType === "personal"
+          ? "your profile updated successfully"
+          : "info updated successfully",
+        { duration: 9000 }
+      );
+    },
+    onError(error) {
+      console.log(error);
+      toast.error(
+        `something went wrong while updating ${
+          profileType === "personal" ? "your " : ""
+        }${settingName}`,
+        {
+          duration: 9000,
+        }
+      );
+    },
+  });
 
   return (
     <div className="flex flex-wrap justify-between gap-1.5 items-center bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2">
       <div>
-        <p>change your {settingName}</p>
+        <p>
+          change {profileType === "personal" ? "your " : ""}
+          {settingName}
+        </p>
         {activeInput ? (
           <Input
             type={settingName === "email" ? "email" : "text"}
             defaultValue={settingValue}
             className="bg-white"
             ref={newValueInputRef}
-            disabled={updateUserInfoLoading}
+            disabled={loading}
           />
         ) : (
-          <p className="text-gray-600 text-md">{settingValue}</p>
+          <p className="text-gray-600 text-md truncate">{settingValue}</p>
         )}
       </div>
 
       <div className="flex gap-2">
         {activeInput && (
           <Button
-            disabled={updateUserInfoLoading}
+            disabled={loading}
             onClick={() => {
               const newValue = newValueInputRef.current?.value;
 
@@ -102,29 +178,47 @@ const SettingSlice = ({ settingName, settingValue }: Props) => {
 
               if (newValue === settingValue) {
                 toast.error(
-                  `new ${settingName} can't be the same of old ${settingName}`,
+                  `new ${settingName} can't be the same of old value`,
                   {
                     duration: 9000,
                   }
                 );
               }
 
-              updateUserInfo({
-                variables: {
-                  newUserData: { [settingName]: newValue },
-                },
-              });
+              let variables: Record<string, unknown>;
+
+              switch (profileType) {
+                case "personal": {
+                  variables = {
+                    newUserData: { [settingName]: newValue },
+                  };
+                  break;
+                }
+                case "page": {
+                  variables = {
+                    editPageData: { pageId, [settingName]: newValue },
+                  };
+                  break;
+                }
+                default: {
+                  variables = {
+                    newUserData: { [settingName]: newValue },
+                  };
+                }
+              }
+
+              updateProfileInfo({ variables });
             }}
           >
             <FaCheckCircle />
-            {updateUserInfoLoading ? "Loading..." : "Submit"}
+            {loading ? "Loading..." : "Submit"}
           </Button>
         )}
 
         <Button
           className={activeInput ? "bg-red-600 hover:bg-red-500" : ""}
           onClick={() => setActiveInput((prev) => !prev)}
-          disabled={updateUserInfoLoading}
+          disabled={loading}
         >
           {activeInput ? (
             <>

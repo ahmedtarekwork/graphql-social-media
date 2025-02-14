@@ -29,8 +29,14 @@ import {
 import { Dialog } from "@/components/ui/dialog";
 
 // icons
-import { FaUser, FaUserFriends, FaBookmark, FaBell } from "react-icons/fa";
-import { MdLogout, MdMessage } from "react-icons/md";
+import {
+  FaUser,
+  FaUserFriends,
+  FaBookmark,
+  FaBell,
+  FaFlag,
+} from "react-icons/fa";
+import { MdGroups, MdLogout } from "react-icons/md";
 import { TiUserAdd } from "react-icons/ti";
 import { FaPeopleGroup } from "react-icons/fa6";
 
@@ -63,9 +69,14 @@ const sidebarItems: {
     Icon: FaBookmark,
   },
   {
+    content: "pages",
+    href: `/pages`,
+    Icon: FaFlag,
+  },
+  {
     content: "groups",
     href: `/groups`,
-    Icon: MdMessage,
+    Icon: MdGroups,
   },
   {
     content: "people you may know",
@@ -103,7 +114,7 @@ const Sidebar = () => {
         <NotificationsDialogContent setOpenDialog={setOpenDialog} />
       </Dialog>
 
-      <SidebarElement>
+      <SidebarElement id="nav-sidebar">
         {isMobile && (
           <SidebarHeader>
             <Button

@@ -12,7 +12,11 @@ import Loading from "./Loading";
 // utils
 import classNames from "classnames";
 
-const ImageWithLoading = (props: ImageProps) => {
+const ImageWithLoading = ({
+  spinnerFill,
+  customSize,
+  ...props
+}: ImageProps & { customSize?: number; spinnerFill?: "white" | "primary" }) => {
   const [loading, setLoading] = useState(true);
   const [src, setSrc] = useState("");
 
@@ -22,9 +26,11 @@ const ImageWithLoading = (props: ImageProps) => {
     if (props.src) {
       (async () => {
         try {
-          const response = await fetch(
-            props.src as Parameters<typeof fetch>["0"]
-          );
+          const response = await fetch(props.src as string, {
+            headers: {
+              "Cache-Control": "no-cache",
+            },
+          });
 
           const blob = await response.blob();
 
@@ -44,20 +50,24 @@ const ImageWithLoading = (props: ImageProps) => {
   }, [loading]);
 
   if (loading) {
-    if (props.width && props.height) {
+    if ((props.width && props.height) || customSize) {
+      const width = (customSize || props.width)!;
+      const height = (customSize || props.height)!;
+
       return (
         <div
+          className="grid place-content-center mx-auto"
           style={{
-            width: props.width + "px",
-            height: props.height + "px",
+            width: width + "px",
+            height: height + "px",
           }}
         >
-          <Loading size={+props.width - (+props.width >= 20 ? 7 : 0)} />
+          <Loading fill={spinnerFill} size={+width - (+width >= 20 ? 7 : 0)} />
         </div>
       );
-    } else {
-      return <Loading />;
     }
+
+    return <Loading fill={spinnerFill} />;
   }
 
   return (

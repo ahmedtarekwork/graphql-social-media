@@ -10,13 +10,13 @@ import {
 } from "react";
 
 // tabs
-import SettingsTab from "./tabs/SettingsTab";
+import ProfileSettings from "../../../../../components/profiles/settings/ProfileSettings";
 import PostsTab from "./tabs/postsTab/PostsTab";
 import AboutTab from "./tabs/AboutTab";
 import FriendsTab from "./tabs/FriendsTab";
 
 // types
-import { type ProfileAndCoverPictureRefType } from "./ProfileAndCoverPicture";
+import { type ProfileAndCoverPictureRefType } from "../../../../../components/profiles/ProfileAndCoverPicture";
 import type { UserType } from "@/lib/types";
 
 type TabsList = "settings" | "friends" | "posts" | "about";
@@ -48,10 +48,11 @@ const TabsSwitcher = forwardRef<TabsSwitcherRefType, Props>(
     switch (activeTab) {
       case "settings": {
         return (
-          <SettingsTab
+          <ProfileSettings
             profilePictureRef={profilePictureRef}
             coverPictureRef={coverPictureRef}
-            profileOwner={profileOwner}
+            profileInfo={profileOwner}
+            profileType="personal"
           />
         );
       }

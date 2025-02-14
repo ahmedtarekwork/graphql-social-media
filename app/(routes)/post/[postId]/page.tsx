@@ -13,7 +13,7 @@ import { gql, useQuery } from "@apollo/client";
 
 // SVGs
 import _404SVG from "/public/illustrations/404.svg";
-import emptySVG from "/public/illustrations/empty.svg";
+import emptySVG from "/public/illustrations/search.svg";
 
 const GET_SINGLE_POST = gql`
   query GetSinglePost($postId: ID!) {

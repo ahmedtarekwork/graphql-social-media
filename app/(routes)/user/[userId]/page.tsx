@@ -22,7 +22,7 @@ import Loading from "@/components/Loading";
 
 import ProfileAndCoverPicture, {
   type ProfileAndCoverPictureRefType,
-} from "./components/ProfileAndCoverPicture";
+} from "../../../../components/profiles/ProfileAndCoverPicture";
 
 import TabsSwitcher, {
   type TabsSwitcherRefType,
@@ -43,6 +43,7 @@ import FriendshipBtns from "./components/FriendshipBtns";
 
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";
+import ProfileTopInfo from "@/components/profiles/ProfileTopInfo";
 
 const putActiveClassOnTab = (e: MouseEvent<HTMLButtonElement>) => {
   e.currentTarget.parentElement?.parentElement
@@ -85,7 +86,7 @@ const GET_SINGLE_USER = gql`
 
 const ProfilePage = () => {
   // contexts
-  const { user, setUser } = useContext(authContext);
+  const { user } = useContext(authContext);
 
   const userId = useParams()?.userId;
   const isCurrentUserProfile = useIsCurrentUserProfile();
@@ -164,33 +165,12 @@ const ProfilePage = () => {
   return (
     <div className="-mt-4">
       {/* user pictures and info */}
-      <div className="relative mb-4 ">
-        <ProfileAndCoverPicture
-          ref={coverPictureRef}
-          user={profileOwner}
-          setUser={setUser}
-          pictureType="cover"
-        />
-
-        <div className="flex items-center gap-2 mt-3 max-sm:flex-col">
-          <ProfileAndCoverPicture
-            setUser={setUser}
-            user={profileOwner}
-            ref={profilePictureRef}
-            pictureType="profile"
-          />
-
-          <div className="space-y-2 ">
-            <h2 className="font-bold text-2xl text-secondary">
-              {profileOwner.username}
-            </h2>
-
-            <p className="text-gray-600 text-md">{profileOwner.email}</p>
-
-            <FriendshipBtns userId={userId as string} />
-          </div>
-        </div>
-      </div>
+      <ProfileTopInfo
+        profileType="personal"
+        coverPictureRef={coverPictureRef}
+        profilePictureRef={profilePictureRef}
+        profileOwner={profileOwner}
+      />
 
       {/* tabs bar */}
       <ul className="flex gap-2 bg-primary bg-opacity-20 p-3 mt-2 mb-4 rounded-md border-b-2 border-primary max-sm:justify-center max-sm:flex-wrap max-sm:[&>*]:flex-1 [&>*]:[&>*]:w-full">

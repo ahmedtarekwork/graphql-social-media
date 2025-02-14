@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FaBars } from "react-icons/fa";
+import { usePathname } from "next/navigation";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -181,14 +182,20 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
+    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
     const sidebarRef = React.useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+
+    const insideFlow =
+      !isMobile &&
+      props.id?.includes("pages-sidebar") &&
+      ["/pages"].includes(pathname);
 
     React.useEffect(() => {
-      // setHeaderHeight(document.getElementById("app-header")?.offsetHeight || 0);
       const header = document.getElementById("app-header");
       const sidebar = sidebarRef.current;
 
-      if (sidebar && header) {
+      if (sidebar && props.id?.includes("nav-sidebar") && header) {
         const watcher = new ResizeObserver(() => {
           sidebar.style.cssText = `height: calc(100% - ${header.offsetHeight}px); top: ${header.offsetHeight}px`;
         });
@@ -200,8 +207,6 @@ const Sidebar = React.forwardRef<
         };
       }
     }, []);
-
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
     if (collapsible === "none") {
       return (
@@ -243,7 +248,10 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block fixed z-[1000]"
+        className={cn(
+          "group peer hidden md:block",
+          insideFlow ? "relative" : "fixed z-[1000]"
+        )}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -262,7 +270,8 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            `duration-200 fixed top-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex`,
+            insideFlow ? "absolute inset-0" : "fixed top-0 z-10",
+            `duration-200 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex`,
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",

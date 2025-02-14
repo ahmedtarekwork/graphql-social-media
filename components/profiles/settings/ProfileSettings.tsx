@@ -1,9 +1,12 @@
+// nextjs
+import { useParams } from "next/navigation";
+
 // react
 import { type RefObject } from "react";
 
 // components
-import SettingSlice from "../SettingSlice";
-import RemovePictureSettingTabSlice from "../RemovePictureSettingTabSlice";
+import SettingSlice from "../../../app/(routes)/user/[userId]/components/SettingSlice";
+import RemovePictureSlice from "./RemovePictureSlice";
 
 // shadcn
 import { Button } from "@/components/ui/button";
@@ -14,27 +17,44 @@ import { MdCameraswitch } from "react-icons/md";
 // types
 import { type ProfileAndCoverPictureRefType } from "../ProfileAndCoverPicture";
 import type { UserType } from "@/lib/types";
+import { type PageAndGroupSettingsProfileType } from "./PageAndGroupSettings";
+
+type ProfileSettingsProfileTypeProps =
+  | {
+      profileType: "personal";
+      profileInfo: UserType;
+      setOpenSettings?: never;
+      updateQuery?: never;
+    }
+  | PageAndGroupSettingsProfileType;
 
 type Props = {
   coverPictureRef: RefObject<ProfileAndCoverPictureRefType>;
   profilePictureRef: RefObject<ProfileAndCoverPictureRefType>;
-  profileOwner: UserType;
-};
+} & ProfileSettingsProfileTypeProps;
 
-const SettingsTab = ({
+const ProfileSettings = ({
   coverPictureRef,
   profilePictureRef,
-  profileOwner,
+  profileType,
+  profileInfo,
+  updateQuery,
+  setOpenSettings,
 }: Props) => {
+  const pageId = (useParams()?.pageId || "") as string;
+
+  const settingsSliceProps =
+    profileType === "page"
+      ? { profileType: "page" as "page", pageId: pageId }
+      : { profileType: "group" as "group", groupId: "" };
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 text-left">
       <div className="pb-4 space-y-2">
-        <h3 className="text-secondary font-bold underline">profile picture</h3>
+        <h3 className="text-secondary font-bold underline ">profile picture</h3>
 
         <div className="setting-slice">
-          <p>
-            {profileOwner.profilePicture ? "change" : "Add"} profile picture
-          </p>
+          <p>{profileInfo.profilePicture ? "change" : "Add"} profile picture</p>
 
           <input
             type="file"
@@ -44,8 +64,10 @@ const SettingsTab = ({
               const picture = e.target.files?.[0];
               if (picture) {
                 profilePictureRef.current?.setNewPicture(picture);
-                if (profileOwner.profilePicture)
+                if (profileInfo.profilePicture)
                   profilePictureRef.current?.setMode("update");
+
+                setOpenSettings?.(false);
               }
             }}
           />
@@ -55,7 +77,7 @@ const SettingsTab = ({
               htmlFor="change-profile-picture-from-settings"
               className="cursor-pointer"
             >
-              {profileOwner.profilePicture ? (
+              {profileInfo.profilePicture ? (
                 <>
                   <MdCameraswitch />
                   Change
@@ -71,14 +93,14 @@ const SettingsTab = ({
           </Button>
         </div>
 
-        <RemovePictureSettingTabSlice pictureType="profile" />
+        <RemovePictureSlice pictureType="profile" />
       </div>
 
       <div className="pb-4 space-y-2">
         <h3 className="text-secondary font-bold underline">cover picture</h3>
 
         <div className="setting-slice">
-          <p>{profileOwner.coverPicture ? "change" : "Add"} cover picture</p>
+          <p>{profileInfo.coverPicture ? "change" : "Add"} cover picture</p>
 
           <input
             type="file"
@@ -88,8 +110,10 @@ const SettingsTab = ({
               const picture = e.target.files?.[0];
               if (picture) {
                 coverPictureRef.current?.setNewPicture(picture);
-                if (profileOwner.coverPicture)
+                if (profileInfo.coverPicture)
                   coverPictureRef.current?.setMode("update");
+
+                setOpenSettings?.(false);
               }
             }}
           />
@@ -99,7 +123,7 @@ const SettingsTab = ({
               htmlFor="change-cover-picture-from-settings"
               className="cursor-pointer"
             >
-              {profileOwner.coverPicture ? (
+              {profileInfo.coverPicture ? (
                 <>
                   <MdCameraswitch />
                   Change
@@ -115,16 +139,38 @@ const SettingsTab = ({
           </Button>
         </div>
 
-        <RemovePictureSettingTabSlice pictureType="cover" />
+        <RemovePictureSlice pictureType="cover" />
       </div>
 
-      <SettingSlice settingName="email" settingValue={profileOwner.email} />
-      <SettingSlice
-        settingName="username"
-        settingValue={profileOwner.username}
-      />
-      <SettingSlice settingName="address" settingValue={profileOwner.address} />
+      {profileType === "personal" && (
+        <>
+          <SettingSlice
+            profileType={profileType}
+            settingName="email"
+            settingValue={profileInfo.email}
+          />
+          <SettingSlice
+            profileType={profileType}
+            settingName="username"
+            settingValue={profileInfo.username}
+          />
+          <SettingSlice
+            profileType={profileType}
+            settingName="address"
+            settingValue={profileInfo.address}
+          />
+        </>
+      )}
+
+      {profileType !== "personal" && (
+        <SettingSlice
+          {...settingsSliceProps}
+          updateQuery={updateQuery}
+          settingName="name"
+          settingValue={profileInfo.name}
+        />
+      )}
     </div>
   );
 };
-export default SettingsTab;
+export default ProfileSettings;
