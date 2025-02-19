@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // gql
-import { gql, useQuery } from "@apollo/client";
+import { gql, useLazyQuery } from "@apollo/client";
 
 // SVGs
 import _404SVG from "/public/illustrations/error-laptop.svg";
@@ -146,17 +146,19 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
     },
   });
 
-  const { loading, error, fetchMore } = useQuery(GET_POST_COMMENTS, {
-    variables: queryVariables(),
-    skip: skipQueryFetch,
-    onCompleted(data) {
-      if (!skipQueryFetch) {
-        setSkipQueryFetch(true);
-        setComments(data?.getPostComments?.comments || ([] as CommentType[]));
-        setIsFinalPage(!!data?.getPostComments?.isFinalPage);
-      }
-    },
-  });
+  const [getComments, { loading, error, fetchMore }] = useLazyQuery(
+    GET_POST_COMMENTS,
+    {
+      variables: queryVariables(),
+      onCompleted(data) {
+        if (!skipQueryFetch) {
+          setSkipQueryFetch(true);
+          setComments(data?.getPostComments?.comments || ([] as CommentType[]));
+          setIsFinalPage(!!data?.getPostComments?.isFinalPage);
+        }
+      },
+    }
+  );
 
   const commentFromProps =
     mode === "new"
@@ -187,6 +189,7 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
         ]);
         setIsFinalPage(!!data?.getPostComments?.isFinalPage);
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {
       toast.error("can't get more comments at the momment");
     } finally {
@@ -199,7 +202,13 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
       handleFetchMore();
       waitToFetchMore.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchMoreLoading, stopFetchMore]);
+
+  useEffect(() => {
+    if (!skipQueryFetch) getComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Dialog>
@@ -250,7 +259,7 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
               btn={{ type: "custom", component: <></> }}
               content={
                 <>
-                  This post doesn't have any comments yet, <br />
+                  This post doesn{"'"}t have any comments yet, <br />
                   You can be the first.
                 </>
               }
@@ -330,7 +339,7 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
                                               } of post`}
                                               width={250}
                                               height={250}
-                                              className="aspect-[1]"
+                                              className="aspect-[1] object-contain"
                                               priority
                                             />
                                           </li>
@@ -422,7 +431,6 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                console.log("edit...");
 
                                 setMode("edit");
                                 setSelectedCommentToEdit({

@@ -28,19 +28,21 @@ export const POST = async ({ formData }: NextRequest) => {
       const img = data.get(id) as File;
       if (!img) return;
 
-      new Promise(async (res, rej) => {
+      return new Promise(async (res, rej) => {
         const editData = { public_id: id, invalidate: true };
 
         const buffer = new Uint8Array(await img.arrayBuffer());
 
         cloudinary.uploader
-          .upload_stream(editData, (err) => {
+          .upload_stream(editData, (err, result) => {
             if (err) {
               rej(err);
               return;
             }
 
-            res({ public_id: id });
+            res(
+              JSON.parse(JSON.stringify(result, ["public_id", "secure_url"]))
+            );
           })
           .end(buffer);
       });
@@ -48,23 +50,11 @@ export const POST = async ({ formData }: NextRequest) => {
 
     const finalImgsArr = await Promise.allSettled(updatedMedia);
 
-    const successfullLength = finalImgsArr.filter(
-      (response) => response.status === "fulfilled"
-    ).length;
-
-    let message = "";
-
-    if (successfullLength === updatedMedia.length) {
-      message = "all media updated succesffully";
-    }
-
-    if (successfullLength < updatedMedia.length) {
-      message = `${successfullLength} of ${updatedMedia.length} media updated succesffully`;
-    }
-
-    if (successfullLength === 0) throw new Error();
-
-    return NextResponse.json({ message });
+    return NextResponse.json(
+      finalImgsArr
+        .filter((res) => res.status === "fulfilled")
+        .map((res) => res.value)
+    );
   } catch (err) {
     console.log(err);
 

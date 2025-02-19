@@ -1,5 +1,8 @@
 "use client";
 
+// nextjs
+import { useParams } from "next/navigation";
+
 // react
 import {
   useState,
@@ -48,6 +51,7 @@ type ModeType =
       skipCount: MutableRefObject<number>;
       stopFetchMore: boolean;
       setStopFetchMore: Dispatch<SetStateAction<boolean>>;
+      normalUser?: never;
     }
   | {
       mode: "homePage";
@@ -56,6 +60,16 @@ type ModeType =
       skipCount?: never;
       stopFetchMore?: never;
       setStopFetchMore?: never;
+      normalUser?: never;
+    }
+  | {
+      mode: "singlePageInfoPage";
+      isCurrentUserProfile?: never;
+      profileOwner?: never;
+      skipCount: MutableRefObject<number>;
+      stopFetchMore: boolean;
+      setStopFetchMore: Dispatch<SetStateAction<boolean>>;
+      normalUser: boolean;
     };
 
 type Props = {
@@ -72,20 +86,32 @@ const PostsPreviewer = ({
   stopFetchMore,
   setStopFetchMore,
   mode,
+  normalUser,
 }: Props) => {
+  const pageId = (useParams()?.pageId || "") as string;
+
   const variables = {
     inputType: "PaginatedItemsInput",
     methodName: "getHomePagePosts",
   };
 
-  if (mode === "profilePage") {
-    variables.inputType = isCurrentUserProfile
-      ? "PaginatedItemsInputWithSkipInput"
-      : "PaginatedPostsForSpecificUserInput";
+  switch (mode) {
+    case "profilePage": {
+      variables.inputType = isCurrentUserProfile
+        ? "PaginatedItemsInputWithSkipInput"
+        : "PaginatedPostsForSpecificUserInput";
 
-    variables.methodName = `get${
-      isCurrentUserProfile ? "Current" : "Single"
-    }UserPosts`;
+      variables.methodName = `get${
+        isCurrentUserProfile ? "Current" : "Single"
+      }UserPosts`;
+      break;
+    }
+
+    case "singlePageInfoPage": {
+      variables.inputType = "PaginatedItemsInputWithIdAndSkip";
+      variables.methodName = `getPagePosts`;
+      break;
+    }
   }
 
   const GET_POSTS = (): DocumentNode => {
@@ -105,11 +131,22 @@ const PostsPreviewer = ({
           shareDate
           community
           isShared
+
+          communityInfo {
+            _id
+            name
+            profilePicture {
+              secure_url
+              public_id
+            }
+          }
+
           sharePerson {
             _id
             username
             profilePicture {
               secure_url
+              public_id
             }
           }
   
@@ -120,6 +157,7 @@ const PostsPreviewer = ({
           owner {
             profilePicture {
               secure_url
+              public_id
             }
             username
             _id
@@ -160,27 +198,27 @@ const PostsPreviewer = ({
     paginatedPosts: {
       ...pageAndLimit.current,
 
-      ...(mode === "homePage" ||
-      (mode === "profilePage" && isCurrentUserProfile)
-        ? {}
-        : { userId: profileOwner._id }),
+      ...(mode === "profilePage" && !isCurrentUserProfile
+        ? { userId: profileOwner._id }
+        : {}),
 
-      ...(mode === "profilePage" ? { skip: skipCount?.current || 0 } : {}),
+      ...(mode === "singlePageInfoPage" ? { pageId } : {}),
+
+      ...(["profilePage", "singlePageInfoPage"].includes(mode)
+        ? { skip: skipCount?.current || 0 }
+        : {}),
     },
   });
 
-  const { loading, error, fetchMore, refetch } = useQuery(GET_POSTS(), {
-    skip: disableGetPosts,
+  const {
+    loading,
+    error,
+    fetchMore,
+    updateQuery,
+    data: getPostsData,
+  } = useQuery(GET_POSTS(), {
     variables: queryVariables(),
-
-    onCompleted(initData) {
-      const initDataResult =
-        initData[variables.methodName as keyof typeof initData];
-      if (!disableGetPosts && initDataResult) {
-        setData(initDataResult);
-        setDisableGetPosts(true);
-      }
-    },
+    skip: disableGetPosts,
   });
 
   const posts = data.posts;
@@ -227,6 +265,19 @@ const PostsPreviewer = ({
   };
 
   useEffect(() => {
+    if (getPostsData) {
+      const initDataResult =
+        getPostsData[variables.methodName as keyof typeof getPostsData];
+
+      if (!disableGetPosts && initDataResult) {
+        setData(initDataResult);
+        setDisableGetPosts(true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getPostsData]);
+
+  useEffect(() => {
     const handleScroll = async () => {
       const documentHeight = document.documentElement.scrollHeight;
       const scrollPosition = window.scrollY + window.innerHeight;
@@ -258,13 +309,14 @@ const PostsPreviewer = ({
   }, [stopFetchMore, fetchMoreLoading]);
 
   if (loading) {
-    return <Loading />;
+    return <Loading withFullHeight={false} />;
   }
 
   if (!posts.length && error && !loading) {
     let ownerName = isCurrentUserProfile ? "your" : "this user";
 
     if (mode === "homePage") ownerName = "home page";
+    if (mode === "singlePageInfoPage") ownerName = "this page";
 
     return (
       <IllustrationPage
@@ -295,14 +347,32 @@ const PostsPreviewer = ({
       message =
         "There is no posts for you, follow some pages or join groups or get some friends to see there posts";
 
+    if (mode === "singlePageInfoPage")
+      message = "This page doesn't have any posts at this time";
+
     return (
       <IllustrationPage
         content={message}
-        btn={{ type: "custom", component: <></> }}
+        btn={{
+          type: "custom",
+          component: <></>,
+        }}
         svg={PostsDeviceSVG}
       />
     );
   }
+
+  const postCardProps: Record<string, unknown> =
+    mode === "homePage"
+      ? { mode, updateQuery }
+      : {
+          mode,
+          skipCount,
+          fetchMoreLoading,
+          setStopFetchMore,
+        };
+
+  if (mode === "singlePageInfoPage") postCardProps.normalUser = normalUser;
 
   return (
     <>
@@ -310,13 +380,11 @@ const PostsPreviewer = ({
         {posts.filter(Boolean).map((post) => {
           return (
             <PostCard
+              fetchMethodName={variables.methodName}
               post={post}
-              mode={mode}
-              skipCount={skipCount as any}
-              fetchMoreLoading={fetchMoreLoading as any}
-              setStopFetchMore={setStopFetchMore as any}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              {...(postCardProps as any)}
               TagName="li"
-              profileOwner={profileOwner as any}
               key={post._id}
             />
           );

@@ -2,9 +2,10 @@ import gql from "graphql-tag";
 
 const userTypeDefs = gql`
   type Query {
-    getSingleUser(userId: ID!): User #not full user properties
+    getSingleUser(userId: ID!): User
     getAllUsers(wantedUsers: PaginatedItemsInput!): GetAllUsersResponseType!
-    checkUser: User #not full user
+    checkUser: User
+
     # notifications
     getUserNotifications(
       notificationsPagination: PaginatedItemsInput!
@@ -34,29 +35,6 @@ const userTypeDefs = gql`
       friendsPagination: GetUserFriendsInput!
     ): GetUserFriendsResponseType!
     getUserFriendsCount(userId: ID!): CountResponseType!
-
-    # pages
-    getUserFollowedPages(
-      pagesPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
-    getUserOwnedPage(
-      pagesPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
-    getuserAdminPages(
-      pagesPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
-    IsUserFollowThisPage(pageId: ID!): IsUserFollowThisPageResponse!
-
-    # groups
-    getUserJoinedGroups(
-      groupsPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
-    getUserOwnedGroups(
-      groupsPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
-    getUserAdminGroups(
-      groupsPagination: PaginatedItemsInput!
-    ): [NotFullPageOrGroup!]!
   }
 
   type Mutation {
@@ -77,11 +55,6 @@ const userTypeDefs = gql`
 
     markNotificationAsRead(id: ID!): MarkSingleNotificationAsReadResponseType!
     markAllNotificationsAsRead: SuccessResponseType!
-  }
-
-  enum PicturesTypes {
-    profile
-    cover
   }
 
   input GetUserFriendsInput {

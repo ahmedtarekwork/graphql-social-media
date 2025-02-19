@@ -108,7 +108,8 @@ const NewPagePage = () => {
       }
     }
 
-    makeNewPage({ variables: { pageData } });
+    await makeNewPage({ variables: { pageData } });
+    form?.reset();
   };
 
   const disableBtn = uploadingMedia || loading;

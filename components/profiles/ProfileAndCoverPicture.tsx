@@ -41,6 +41,7 @@ import {
 } from "react-icons/fa";
 import { BsPersonPlusFill } from "react-icons/bs";
 import { IoMdPerson } from "react-icons/io";
+import { TbFlagPlus } from "react-icons/tb";
 
 // types
 import type {
@@ -67,16 +68,19 @@ export type ProfileAndCoverPictureOptionalProps =
       profileType: "personal";
       profileInfo: UserType;
       updateQuery?: never;
+      normalUser?: never;
     }
   | {
       profileType: "page";
       profileInfo: PageType;
       updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+      normalUser: boolean;
     }
   | {
       profileType: "group";
       profileInfo: GroupType;
       updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+      normalUser: boolean;
     };
 
 type Props = {
@@ -91,16 +95,17 @@ export type ProfileAndCoverPictureRefType = {
 };
 
 const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
-  ({ pictureType, profileType, profileInfo, updateQuery }, ref) => {
+  ({ pictureType, profileType, profileInfo, updateQuery, normalUser }, ref) => {
     const pageId = (useParams()?.pageId || "") as string;
 
-    const { user, setUser } = useContext(authContext);
+    const { setUser } = useContext(authContext);
     const isCurrentUserProfile = useIsCurrentUserProfile();
 
     const pictureName = `${pictureType}Picture` as keyof typeof profileInfo;
 
     let hasAccessToChangePicture = false;
-    let NoProfilePictureIcon = IoMdPerson;
+    let NoProfilePictureIcon = BsPersonPlusFill;
+    let NoProfilePictureIconWithoutAccess = IoMdPerson;
     let query: DocumentNode;
 
     const UPDATE_PERSONAL_PICTURE = gql`
@@ -129,23 +134,18 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         break;
       }
       case "page": {
-        if (profileInfo.owner._id.toString() === user?._id.toString())
-          hasAccessToChangePicture = true;
+        if (!normalUser) hasAccessToChangePicture = true;
 
-        if (!profileInfo.profilePicture) NoProfilePictureIcon = FaFlag;
+        if (!profileInfo.profilePicture) {
+          NoProfilePictureIconWithoutAccess = FaFlag;
+          NoProfilePictureIcon = TbFlagPlus;
+        }
 
         query = UPDATE_PAGE_PICTURE;
         break;
       }
       case "group": {
         query = UPDATE_PAGE_PICTURE;
-
-        // if (pageInfo.owner._id.toString() === user?._id.toString())
-        //   hasAccessToChangePicture = true;
-
-        // if (!pageInfo.profilePicture) NoProfilePictureIcon = FaFlag;
-
-        // TiGroup
 
         break;
       }
@@ -159,7 +159,6 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
           switch (profileType) {
             case "personal": {
               const newPicture = data?.changeUserData?.[pictureName];
-              console.log(newPicture);
 
               if (newPicture) {
                 setUser((prev) => ({
@@ -198,10 +197,10 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             duration: 9000,
           });
         },
-        onError(error) {
-          console.log(error);
+        onError({ graphQLErrors }) {
           toast.error(
-            `something went wrong while uploading your new ${pictureType} picture`,
+            graphQLErrors?.[0]?.message ||
+              `something went wrong while uploading your new ${pictureType} picture`,
             { duration: 9000 }
           );
         },
@@ -295,8 +294,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                     }
 
                     uploadProfileOrCoverPicture({ variables });
-                  } catch (err) {
-                    console.log(err);
+                  } catch (_) {
                     toast.error(
                       `something went wrong while upload ${
                         profileType === "personal" ? "your" : "the"
@@ -370,7 +368,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                 htmlFor="choose-profile-pricture"
                 className="block cursor-pointer border-[3px] shadow-sm shadow-primary border-white max-w-[130px] w-[130px] max-h-[130px] h-[130px] p-4 bg-primary rounded-full hover:bg-secondary transition duration-200"
               >
-                <BsPersonPlusFill className="text-white block !w-full !h-full" />
+                <NoProfilePictureIcon className="text-white block !w-full !h-full" />
               </label>
             )}
           </>
@@ -442,7 +440,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
 
     return (
       <div className="border-[3px] shadow-sm shadow-primary border-white max-w-[130px] w-[130px] max-h-[130px] h-[130px] p-4 bg-primary rounded-full">
-        <NoProfilePictureIcon className="text-white block !w-full !h-full" />
+        <NoProfilePictureIconWithoutAccess className="text-white block !w-full !h-full" />
       </div>
     );
   }

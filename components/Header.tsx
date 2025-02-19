@@ -46,8 +46,6 @@ const Header = () => {
 
   const [openDialog, setOpenDialog] = useState(false);
 
-  console.log(user);
-
   return (
     <header id="app-header" className="bg-primary bg-opacity-[42%]">
       <div className="container py-2 flex justify-between items-center">

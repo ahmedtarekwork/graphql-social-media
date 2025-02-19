@@ -13,7 +13,6 @@ import {
   type Dispatch,
   type SetStateAction,
   type ReactNode,
-  useEffect,
 } from "react";
 
 // components
@@ -51,56 +50,6 @@ const CHECK_USER = gql`
         public_id
         secure_url
       }
-
-      ownedPages {
-        _id
-        name
-        profilePicture {
-          public_id
-          secure_url
-        }
-      }
-      adminPages {
-        _id
-        name
-        profilePicture {
-          public_id
-          secure_url
-        }
-      }
-      followedPages {
-        _id
-        name
-        profilePicture {
-          public_id
-          secure_url
-        }
-      }
-
-      ownedGroups {
-        _id
-        name
-        profilePicture {
-          public_id
-          secure_url
-        }
-      }
-      adminGroups {
-        _id
-        profilePicture {
-          public_id
-          secure_url
-        }
-        name
-      }
-      joinedGroups {
-        _id
-        name
-        profilePicture {
-          public_id
-          secure_url
-        }
-      }
     }
   }
 `;
@@ -118,21 +67,20 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
   ];
 
   const [user, setUser] = useState<UserType | null>(null);
+  const [skipRefetch, setSkipRefetch] = useState(false);
 
   const { loading } = useQuery(CHECK_USER, {
+    skip: skipRefetch && !user,
     variables: {},
     onCompleted({ checkUser }) {
-      if (checkUser) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { __typename, ...data } = checkUser;
-        setUser(data);
+      if (checkUser && !skipRefetch) {
+        setUser(checkUser);
+        setSkipRefetch(true);
       }
     },
   });
 
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
   if (
     (needAuthRoutes.some((route) => pathname.startsWith(route)) ||

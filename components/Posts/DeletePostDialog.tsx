@@ -30,7 +30,8 @@ import { type InsideProfileType } from "./PostCard";
 
 type Props = {
   postId: string;
-} & Omit<InsideProfileType, "updateQuery">;
+  mode: Exclude<InsideProfileType["mode"], "homePage">;
+} & Omit<InsideProfileType, "updateQuery" | "mode">;
 
 const DELETE_POST = gql`
   mutation DeletePost($postId: ID!) {
@@ -69,14 +70,15 @@ const DeletePostDialog = (props: Props) => {
       toast.success("post deleted successfully", { duration: 7500 });
     },
 
-    onError(error) {
-      console.log("error", error);
-
+    onError({ graphQLErrors }) {
       if (props.setStopFetchMore) props.setStopFetchMore(false);
 
-      toast.error("can't delete this post at the momment", {
-        duration: 7500,
-      });
+      toast.error(
+        graphQLErrors?.[0]?.message || "can't delete this post at the momment",
+        {
+          duration: 7500,
+        }
+      );
     },
   });
 
@@ -106,7 +108,7 @@ const DeletePostDialog = (props: Props) => {
       </AlertDialogHeader>
 
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogCancel>{loading ? "Close" : "Cancel"}</AlertDialogCancel>
 
         <AlertDialogAction
           disabled={loading}

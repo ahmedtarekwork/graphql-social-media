@@ -11,6 +11,15 @@ export type NotFullUserType = Pick<UserType, "_id" | "username"> & {
   profilePicture: Pick<ImageType, "secure_url"> | null;
 };
 
+export type NotFullCommunity = NotFullPageOrPost &
+  Partial<Pick<GroupType, "membersCount">> &
+  Partial<Pick<PageType, "followersCount">>;
+
+type NotFullPageOrPost = Pick<
+  PageType | GroupType,
+  "_id" | "name" | "profilePicture"
+>;
+
 export type NotificationType = {
   _id: string;
   content: string;
@@ -34,15 +43,8 @@ export type UserType = Record<
   "email" | "username" | "address" | "_id",
   string
 > &
-  Record<
-    "followedPages" | "ownedPages" | "adminPages",
-    Pick<PageType, "_id" | "name" | "profilePicture">[]
-  > &
-  Record<
-    "joinedGroups" | "adminGroups" | "ownedGroups",
-    Pick<GroupType, "_id" | "name" | "profilePicture">[]
-  > &
   Record<"profilePicture" | "coverPicture", ImageType | null> & {};
+
 export type ReqUserType = Omit<UserType, "_id"> & { password: string };
 
 export type StoryType = {
@@ -92,6 +94,7 @@ export type PostType = CommentAndPostSharedProps & {
   shareDate: string;
   isShared: boolean;
   sharePerson?: NotFullUserType;
+  communityInfo?: NotFullPageOrPost;
 };
 
 export type CommentType = CommentAndPostSharedProps & {

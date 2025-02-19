@@ -347,9 +347,6 @@ const commentResolvers = {
             communityId: post.communityId,
           });
 
-          console.log("addComment", addComment);
-          console.log("addComment._doc", addComment._doc);
-
           await Post.updateOne({ _id: postId }, { $inc: { commentsCount: 1 } });
 
           return { ...addComment._doc, owner: user };

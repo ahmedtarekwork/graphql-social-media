@@ -19,10 +19,12 @@ import { toast } from "sonner";
 
 // types
 import { type InsideProfileType } from "./PostCard";
+import { PostType } from "@/lib/types";
 
 type Props = {
   postId: string;
   isInBookMark: boolean;
+  fetchMethodName: string;
 } & Pick<InsideProfileType, "mode" | "updateQuery">;
 
 const SAVE_POST = gql`
@@ -33,41 +35,84 @@ const SAVE_POST = gql`
   }
 `;
 
-const SavePostBtn = ({ postId, isInBookMark, mode, updateQuery }: Props) => {
+const SavePostBtn = ({
+  postId,
+  isInBookMark,
+  mode,
+  updateQuery,
+  fetchMethodName,
+}: Props) => {
   const { setData } = useContext(PostsContext);
 
   const [savePost, { loading }] = useMutation(SAVE_POST, {
     variables: { postId },
     onCompleted(data) {
-      if (mode === "profilePage") {
-        setData((prev) => {
-          return {
-            ...prev,
-            posts: prev.posts.map((post) => {
-              if (post._id === postId) {
-                return {
-                  ...post,
-                  isInBookMark: !isInBookMark,
-                };
-              }
+      switch (mode) {
+        case "singlePageInfoPage":
+        case "profilePage": {
+          setData((prev) => {
+            return {
+              ...prev,
+              posts: prev.posts.map((post) => {
+                if (post._id === postId) {
+                  return {
+                    ...post,
+                    isInBookMark: !isInBookMark,
+                  };
+                }
 
-              return post;
-            }),
-          };
-        });
-      }
-      if (mode === "single") {
-        updateQuery?.((prev: any) => {
-          return {
-            getSinglePost: {
-              ...prev.getSinglePost,
-              isInBookMark: !!prev.getSinglePost.isInBookMark,
-            },
-          };
-        });
+                return post;
+              }),
+            };
+          });
+        }
+
+        case "homePage": {
+          updateQuery?.((prev) => {
+            return {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...(prev as any),
+
+              [fetchMethodName]: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ...(prev as any)?.[fetchMethodName],
+                posts:
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ((prev as any)?.[fetchMethodName]?.posts || []).posts.map(
+                    (post: PostType) => {
+                      if (post._id === postId) {
+                        return {
+                          ...post,
+                          isInBookMark: !isInBookMark,
+                        };
+                      }
+
+                      return post;
+                    }
+                  ),
+              },
+            };
+          });
+        }
+
+        case "single": {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          updateQuery?.((prev: any) => {
+            return {
+              [fetchMethodName]: {
+                ...prev[fetchMethodName],
+                isInBookMark: !isInBookMark,
+              },
+            };
+          });
+        }
       }
 
-      toast.success(data.togglePostFromBookmark.message, { duration: 6000 });
+      toast.success(
+        data?.togglePostFromBookmark?.message ||
+          "you request done successfully",
+        { duration: 6000 }
+      );
     },
     onError({ graphQLErrors }) {
       toast.error(

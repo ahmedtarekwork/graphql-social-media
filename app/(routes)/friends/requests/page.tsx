@@ -26,6 +26,7 @@ import type { NotFullUserType } from "@/lib/types";
 // icons
 import { FaSearch } from "react-icons/fa";
 import { FaArrowRotateLeft } from "react-icons/fa6";
+import HandleFriendshipRequestBtn from "@/components/friends/HandleFriendshipRequestBtn";
 
 const GET_USER_FRIENDSHIP_REQUESTS = gql`
   query GetUserFriendsRequests($requestsPagination: PaginatedItemsInput!) {
@@ -35,6 +36,7 @@ const GET_USER_FRIENDSHIP_REQUESTS = gql`
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
 
@@ -171,21 +173,15 @@ const FriendsRequestsPage = () => {
             <UserCard
               key={user._id}
               user={user}
-              btnsType="HANDLE_FRIENDSHIP_REQUEST"
+              btnType="CUSTOM"
               cardMode="COLUMN"
-              onHandleRequestCompleted={(userId) =>
-                updateQuery((prev) => {
-                  return {
-                    getUserFriendsRequests: {
-                      ...prev.getUserFriendsRequests,
-                      friendsRequests:
-                        prev.getUserFriendsRequests.friendsRequests.filter(
-                          (user: NotFullUserType) => user._id !== userId
-                        ),
-                    },
-                  };
-                })
-              }
+              customCardBtn={({ btnStyle }) => (
+                <HandleFriendshipRequestBtn
+                  updateQuery={updateQuery}
+                  userId={user._id}
+                  btnStyle={btnStyle}
+                />
+              )}
             />
           );
         })}
@@ -195,9 +191,9 @@ const FriendsRequestsPage = () => {
         <Button
           onClick={handleFetchMoreFriendshipRequests}
           className="w-fit mx-auto mt-4"
-          disabled={fetchMoreLoading}
+          disabled={fetchMoreLoading || loading}
         >
-          {fetchMoreLoading ? "Loading..." : "See more"}
+          {fetchMoreLoading || loading ? "Loading..." : "See more"}
         </Button>
       )}
 

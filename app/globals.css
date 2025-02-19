@@ -94,16 +94,6 @@ body {
     @apply overflow-hidden;
   }
 
-  /* input {
-    &::placeholder {
-      @apply transition duration-200;
-    }
-
-    &:focus::placeholder {
-      @apply opacity-0;
-    }
-  } */
-
   svg {
     width: unset !important;
     height: unset !important;
@@ -112,6 +102,17 @@ body {
 
   .setting-slice {
     @apply flex justify-between gap-1.5 items-center bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2;
+  }
+
+  .red-setting-slice {
+    @apply flex justify-between gap-1.5 items-center bg-opacity-30 rounded-md border-l-4 border-red-800 p-2 bg-red-300;
+  }
+
+  .danger-zone {
+    @apply bg-red-700 bg-opacity-10 p-2 border border-red-700 rounded-sm space-y-2;
+  }
+  .danger-zone-title {
+    @apply underline underline-offset-[5px] text-red-700 font-bold;
   }
 
   .circle-btn {

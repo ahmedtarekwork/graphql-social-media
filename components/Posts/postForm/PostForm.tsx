@@ -1,7 +1,7 @@
 "use client";
 
 // next
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 // react
 import {
@@ -48,7 +48,7 @@ import { nanoid } from "nanoid";
 import classNames from "classnames";
 
 // types
-import type { PostType } from "@/lib/types";
+import type { GroupType, PageType, PostType } from "@/lib/types";
 
 type HomePageType =
   | {
@@ -64,12 +64,20 @@ type HomePageType =
       setStopFetchMore: Dispatch<SetStateAction<boolean>>;
     };
 
+type ProfileType =
+  | { profileType: "personal"; profileInfo?: never }
+  | { profileType: "page"; profileInfo: PageType }
+  | { profileType: "group"; profileInfo: GroupType };
+
 type Props =
   | ({
       mode: "new";
       oldPostInfo?: never;
-    } & HomePageType)
+    } & ProfileType &
+      HomePageType)
   | {
+      profileInfo?: never;
+      profileType?: never;
       mode: "edit";
       skipCount?: never;
       fetchMoreLoading?: never;
@@ -87,6 +95,7 @@ type RequiredNewPostDataType = Pick<
   "blockComments" | "caption" | "privacy" | "community"
 > & {
   media: NonNullable<PostType["media"]>;
+  communityId?: string;
 };
 
 const ADD_POST = gql`
@@ -98,12 +107,14 @@ const ADD_POST = gql`
       commentsCount
       isShared
       isInBookMark
+      community
 
       owner {
         _id
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
 
@@ -121,44 +132,16 @@ const ADD_POST = gql`
       reactions {
         angry {
           count
-          users {
-            _id
-            profilePicture {
-              secure_url
-            }
-            username
-          }
         }
 
         like {
           count
-          users {
-            _id
-            profilePicture {
-              secure_url
-            }
-            username
-          }
         }
         sad {
           count
-          users {
-            _id
-            profilePicture {
-              secure_url
-            }
-            username
-          }
         }
         love {
           count
-          users {
-            _id
-            profilePicture {
-              secure_url
-            }
-            username
-          }
         }
       }
     }
@@ -180,8 +163,11 @@ const PostForm = ({
   fetchMoreLoading,
   setStopFetchMore,
   homePage,
+  profileType,
+  profileInfo,
 }: Props) => {
   const router = useRouter();
+  const pageId = (useParams()?.pageId || "") as string;
 
   const { setData } = useContext(PostsContext);
 
@@ -224,7 +210,7 @@ const PostForm = ({
           router.push(
             oldPost.community === "personal"
               ? "/user/profile"
-              : `/${oldPost.community}/${oldPost.communityId?.toString()}`
+              : `/${oldPost.community}s/${oldPost.communityId?.toString()}`
           );
 
           toast.success(`post updated successfully`, { duration: 7500 });
@@ -234,9 +220,19 @@ const PostForm = ({
 
         if (data.addPost) {
           setData((prev) => {
+            const newPost = data.addPost;
+
+            if (data.addPost.community !== "personal") {
+              newPost.communityInfo = {
+                _id: profileInfo?._id,
+                name: profileInfo?.name,
+                profilePicture: profileInfo?.profilePicture,
+              };
+            }
+
             return {
-              ...prev,
-              posts: [data.addPost, ...prev.posts],
+              isFinalPage: !prev.posts.length ? true : prev.isFinalPage,
+              posts: [newPost, ...prev.posts],
             };
           });
 
@@ -309,8 +305,10 @@ const PostForm = ({
         caption,
         media: [],
         privacy,
-        community: "personal",
+        community: profileType || "personal",
       };
+      if (profileType === "page") postData.communityId = pageId;
+      if (profileType === "group") postData.communityId = pageId;
 
       if (!caption && !media.length) {
         toast.error("post must have at least caption or one media", {
@@ -440,7 +438,7 @@ const PostForm = ({
       />
 
       {((mode === "edit" && oldPost.community === "personal") ||
-        mode === "new") && (
+        (mode === "new" && profileType === "personal")) && (
         <Radio_DropDownMenu
           ref={privacyListRef}
           label="privacy"

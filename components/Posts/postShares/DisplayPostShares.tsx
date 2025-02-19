@@ -45,6 +45,7 @@ type Props = {
   postOwnerId: string;
   sharesCount: number;
   isShared: boolean;
+  fetchMethodName: string;
 } & Pick<InsideProfileType, "mode" | "updateQuery">;
 
 const GET_POST_SHARES = gql`
@@ -56,6 +57,7 @@ const GET_POST_SHARES = gql`
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
     }
@@ -69,6 +71,7 @@ const DisplayPostShares = ({
   isShared,
   mode,
   updateQuery,
+  fetchMethodName,
 }: Props) => {
   const { user } = useContext(authContext);
 
@@ -194,6 +197,7 @@ const DisplayPostShares = ({
                   btnVariant="default"
                   mode={mode}
                   updateQuery={updateQuery}
+                  fetchMethodName={fetchMethodName}
                 />
               )}
             </div>

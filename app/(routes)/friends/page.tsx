@@ -7,7 +7,7 @@ import { useContext } from "react";
 import { authContext } from "@/contexts/AuthContext";
 
 // components
-import Friends from "@/components/Friends";
+import Friends from "@/components/friends/Friends";
 
 const FriendsPage = () => {
   const { user } = useContext(authContext);

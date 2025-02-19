@@ -55,11 +55,12 @@ import {
 } from "@/components/ui/carousel";
 
 // types
-import type { PostType, UserType } from "@/lib/types";
+import type { PostType, ReturnTypeOfUseQuery } from "@/lib/types";
 
 // icons
 import {
   FaCommentAlt,
+  FaFlag,
   FaLock,
   FaPen,
   FaShare,
@@ -69,6 +70,7 @@ import {
 } from "react-icons/fa";
 import { FaEarthAmericas } from "react-icons/fa6";
 import { BsThreeDots } from "react-icons/bs";
+import { HiMiniUserGroup } from "react-icons/hi2";
 
 // utils
 import TimeAgo from "javascript-time-ago";
@@ -84,8 +86,8 @@ export type InsideProfileType =
       skipCount?: never;
       fetchMoreLoading?: never;
       setStopFetchMore?: never;
-      updateQuery?: never;
-      profileOwner?: never;
+      normalUser?: never;
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
     }
   | {
       mode: "profilePage";
@@ -93,7 +95,15 @@ export type InsideProfileType =
       fetchMoreLoading: boolean;
       setStopFetchMore: Dispatch<SetStateAction<boolean>>;
       updateQuery?: never;
-      profileOwner: UserType;
+      normalUser?: never;
+    }
+  | {
+      mode: "singlePageInfoPage";
+      skipCount: MutableRefObject<number>;
+      fetchMoreLoading: boolean;
+      setStopFetchMore: Dispatch<SetStateAction<boolean>>;
+      updateQuery?: never;
+      normalUser: boolean;
     }
   | {
       mode: "single";
@@ -101,12 +111,13 @@ export type InsideProfileType =
       skipCount?: never;
       fetchMoreLoading?: never;
       setStopFetchMore?: never;
-      profileOwner?: never;
+      normalUser?: never;
     };
 
 type Props = {
   TagName: keyof Pick<JSX.IntrinsicElements, "li" | "div">;
   post: PostType;
+  fetchMethodName: string;
 } & InsideProfileType;
 
 TimeAgo.addLocale(en);
@@ -128,13 +139,15 @@ const PostCard = ({
     isShared,
     reactions,
     sharePerson,
+    communityInfo,
   },
-  profileOwner,
   skipCount,
   fetchMoreLoading,
   setStopFetchMore,
   mode,
   updateQuery,
+  fetchMethodName,
+  normalUser,
 }: Props) => {
   const { user } = useContext(authContext);
 
@@ -148,6 +161,32 @@ const PostCard = ({
       PrivacyIcon = FaLock;
     }
   }
+
+  const deletePostDialogProps =
+    mode === "single"
+      ? { mode }
+      : {
+          mode: "profilePage" as const,
+          skipCount,
+          fetchMoreLoading,
+          setStopFetchMore,
+        };
+
+  const profilePictureSrc =
+    community === "personal"
+      ? profilePicture?.secure_url
+      : communityInfo?.profilePicture?.secure_url;
+
+  let NoOwnerPictureIcon = FaUser;
+
+  if (community === "page") NoOwnerPictureIcon = FaFlag;
+  if (community === "group") NoOwnerPictureIcon = HiMiniUserGroup;
+
+  let showPostModifyBtns = false;
+
+  if (mode === "singlePageInfoPage" && !normalUser) showPostModifyBtns = true;
+  if (mode !== "homePage" && ownerId.toString() === user?._id.toString())
+    showPostModifyBtns = true;
 
   return (
     <TagName className="rounded-sm shadow-md p-2 border border-primary space-y-1.5">
@@ -174,33 +213,46 @@ const PostCard = ({
 
       <div className="flex items-center gap-2 flex-wrap justify-between">
         <div className="flex gap-1">
-          <Link href={`/user/${ownerId}`} className="peer">
-            {profilePicture?.secure_url ? (
+          <Link
+            href={`/${community === "personal" ? "user" : community + "s"}/${
+              community === "personal" ? ownerId : communityInfo?._id || ""
+            }`}
+            className="peer"
+          >
+            {profilePictureSrc ? (
               <Image
                 alt="post owner picture"
-                src={profilePicture.secure_url}
+                src={profilePictureSrc}
                 width={35}
                 height={35}
                 className="aspect-[1] rounded-full post-card-img"
               />
             ) : (
               <div className="bg-primary rounded-full w-[35px] h-[35px] grid place-content-center post-card-img">
-                <FaUser size={20} fill="white" />
+                <NoOwnerPictureIcon size={20} fill="white" />
               </div>
             )}
           </Link>
 
           <div className="peer-hover:[&_a]:underline">
             <Link
-              href={`/user/${ownerId}`}
+              href={`/${community === "personal" ? "user" : community + "s"}/${
+                community === "personal" ? ownerId : communityInfo?._id || ""
+              }`}
               className="font-bold hover:underline"
             >
-              {username}
+              {community === "personal" ? username : communityInfo?.name}
             </Link>
 
             <div className="flex items-center gap-1 flex-wrap">
               {community === "personal" && (
                 <PrivacyIcon className="fill-gray-500" size={14} />
+              )}
+              {community === "page" && (
+                <FaFlag className="fill-gray-500" size={14} />
+              )}
+              {community === "group" && (
+                <HiMiniUserGroup className="fill-gray-500" size={14} />
               )}
 
               <p className="font-extralight text-gray-500 text-xs">
@@ -224,9 +276,10 @@ const PostCard = ({
                 updateQuery={updateQuery}
                 postId={_id}
                 isInBookMark={isInBookMark}
+                fetchMethodName={fetchMethodName}
               />
 
-              {ownerId.toString() === user?._id.toString() && (
+              {showPostModifyBtns && (
                 <>
                   <Link href={`/editPost/${_id}`}>
                     <DropdownMenuItem className="cursor-pointer flex flex-wrap gap-1.5 items-center hover:!text-green-600 text-green-600 hover:bg-green-600 hover:bg-opacity-20 transition duration-200">
@@ -246,13 +299,7 @@ const PostCard = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DeletePostDialog
-            postId={_id}
-            skipCount={skipCount as any}
-            fetchMoreLoading={fetchMoreLoading as any}
-            setStopFetchMore={setStopFetchMore as any}
-            mode={mode}
-          />
+          <DeletePostDialog postId={_id} {...deletePostDialogProps} />
         </AlertDialog>
       </div>
 
@@ -262,7 +309,7 @@ const PostCard = ({
 
       {!!media?.length && (
         <Dialog>
-          <DialogTrigger>
+          <DialogTrigger className="w-full">
             <ul className="flex flex-wrap gap-1.5 [&>*]:flex-1">
               {(media || [])
                 .slice(0, 3)
@@ -273,7 +320,7 @@ const PostCard = ({
                     <li
                       key={public_id}
                       className={classNames(
-                        "grid place-content-center min-w-[150px]",
+                        "grid place-content-center",
                         mediaIndex === 2 && isMoreThanThreeElements
                           ? "relative post-media-list-item-cover"
                           : ""
@@ -284,7 +331,7 @@ const PostCard = ({
                         alt={`media No.${mediaIndex + 1} of post`}
                         width={250}
                         height={250}
-                        className="aspect-[1]"
+                        className="aspect-[1] object-contain"
                         priority
                       />
                     </li>
@@ -354,6 +401,7 @@ const PostCard = ({
             sharesCount={shareData.count}
             mode={mode}
             updateQuery={updateQuery}
+            fetchMethodName={fetchMethodName}
           />
         )}
       </div>
@@ -384,6 +432,7 @@ const PostCard = ({
             isShared={!!isShared}
             postId={_id}
             btnVariant="ghost"
+            fetchMethodName={fetchMethodName}
           />
         )}
       </div>

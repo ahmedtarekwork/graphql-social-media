@@ -5,14 +5,11 @@ import localFont from "next/font/local";
 // styles
 import "./globals.css";
 
-// react
-import { Suspense } from "react";
-
 // contexts
 import ApolloContext from "@/contexts/ApolloContext";
 import AuthContext from "@/contexts/AuthContext";
 import UserNotificationsCountContext from "@/contexts/UserNotificationsCountContext";
-import PostsProvider from "@/contexts/PostsContext";
+// import PostsProvider from "@/contexts/PostsContext";
 
 // utils
 import { Toaster } from "sonner";
@@ -21,7 +18,6 @@ import { Toaster } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Sidebar from "@/components/sidebar/Sidebar";
-import Loading from "./loading";
 // shadcn
 import { SidebarProvider } from "@/components/ui/sidebar";
 
@@ -51,28 +47,26 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Suspense fallback={<Loading />}>
-          <ApolloContext>
-            <Toaster richColors />
+        <ApolloContext>
+          <Toaster richColors />
 
-            <AuthContext>
-              <UserNotificationsCountContext>
-                <SidebarProvider defaultOpen={false}>
-                  <Header />
-                  <Sidebar />
-                </SidebarProvider>
+          <AuthContext>
+            <UserNotificationsCountContext>
+              <SidebarProvider defaultOpen={false}>
+                <Header />
+                <Sidebar />
+              </SidebarProvider>
 
-                <PostsProvider>
-                  <main className="flex-1 flex flex-col container my-4">
-                    {children}
-                  </main>
-                </PostsProvider>
-              </UserNotificationsCountContext>
+              {/* <PostsProvider> */}
+              <main className="flex-1 flex flex-col container my-4">
+                {children}
+              </main>
+              {/* </PostsProvider> */}
+            </UserNotificationsCountContext>
 
-              <Footer />
-            </AuthContext>
-          </ApolloContext>
-        </Suspense>
+            <Footer />
+          </AuthContext>
+        </ApolloContext>
       </body>
     </html>
   );

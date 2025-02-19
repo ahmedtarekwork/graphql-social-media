@@ -3,8 +3,21 @@ import gql from "graphql-tag";
 const pageTypeDefs = gql`
   type Query {
     getPageInfo(pageId: ID!): Page
-    getPagePost(pagePostsInfo: PagePostsInfoInput!): GetPagePostsResponse!
-    getAllPages(wantedPageData: PaginatedItemsInput!): [Page!]!
+    getPagePosts(
+      paginatedPosts: PaginatedItemsInputWithIdAndSkip!
+    ): GetPagePostsResponse!
+
+    getExplorePages(pagination: PaginatedItemsInput!): GetPagesResponse!
+    getFollowedPages(pagination: PaginatedItemsInput!): GetPagesResponse!
+    getOwnedPages(pagination: PaginatedItemsInput!): GetPagesResponse!
+    getAdminPages(pagination: PaginatedItemsInput!): GetPagesResponse!
+
+    getPageAdminsList(
+      paginationData: PaginatedItemsInputWithIdAndSkip!
+    ): GetPageAdminsListResponse!
+
+    isUserFollowingPage(pageId: ID!): IsUserFollowingPageResponse!
+    isUserAdminInPage(pageId: ID!): IsUserAdminInPageResponse!
   }
 
   type Mutation {
@@ -12,12 +25,46 @@ const pageTypeDefs = gql`
     editPage(editPageData: EditPageInput!): SuccessResponseType!
     deletePage(pageId: ID!): SuccessResponseType!
 
-    togglePageAdmin(toggleAdminData: PageAdminInput): SuccessResponseType!
+    togglePageAdmin(toggleAdminData: PageAdminInput!): SuccessResponseType!
 
-    togglePageFollow(pageId: ID!): [String!]!
+    togglePageFollow(pageId: ID!): SuccessResponseType!
+
+    removePageProfileOrCoverPicture(
+      removePictureInfo: RemovePictureInfoInput!
+    ): SuccessResponseType!
   }
 
-  input PagePostsInfoInput {
+  type GetPagesResponse {
+    pages: [NotFullPage]!
+    isFinalPage: Boolean!
+  }
+
+  type GetPageAdminsListResponse {
+    isFinalPage: Boolean!
+    admins: [NotFullUser!]!
+  }
+
+  type IsUserAdminInPageResponse {
+    isUserAdminInPage: Boolean!
+  }
+
+  type IsUserFollowingPageResponse {
+    isUserFollowingPage: Boolean!
+  }
+
+  input RemovePictureInfoInput {
+    pageId: ID!
+    pictureType: PicturesTypes!
+  }
+
+  input PaginatedItemsInputWithIdAndSkip {
+    pageId: ID!
+    limit: Int!
+    page: Int!
+    skip: Int!
+  }
+
+  input PaginatedItemsInputWithPageId {
     pageId: ID!
     limit: Int!
     page: Int!
@@ -47,6 +94,12 @@ const pageTypeDefs = gql`
   input PageAdminInput {
     pageId: ID!
     newAdminId: ID!
+    toggle: TogglePageAdminEnum!
+  }
+
+  enum TogglePageAdminEnum {
+    add
+    remove
   }
 `;
 

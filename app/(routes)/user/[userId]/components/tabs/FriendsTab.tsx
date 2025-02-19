@@ -8,7 +8,7 @@ import { useContext, useEffect, useState } from "react";
 import { authContext } from "@/contexts/AuthContext";
 
 // components
-import Friends from "@/components/Friends";
+import Friends from "@/components/friends/Friends";
 
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";

@@ -2,34 +2,24 @@
 import Image from "next/image";
 import Link from "next/link";
 
-// react
-import { useContext } from "react";
-
-// contexts
-import { userNotificationsCountContext } from "@/contexts/UserNotificationsCountContext";
-
 // components
 // shadcn
 import { Button } from "./ui/button";
 
 // icons
-import { MdBlock } from "react-icons/md";
-import { FaCheckCircle, FaEye, FaUser } from "react-icons/fa";
+import { FaEye, FaUser } from "react-icons/fa";
 
 // types
 import type { NotFullUserType } from "@/lib/types";
 
-// gql
-import { gql, useMutation } from "@apollo/client";
-
-// utils
-import { toast } from "sonner";
-
 type BtnsType =
-  | { btnsType: "VIEW_PROFILE" }
   | {
-      btnsType: "HANDLE_FRIENDSHIP_REQUEST";
-      onHandleRequestCompleted?: (userId: string) => void;
+      btnType: "VIEW_PROFILE";
+      CustomCardBtn?: never;
+    }
+  | {
+      btnType: "CUSTOM";
+      customCardBtn: ({ btnStyle }: { btnStyle: string }) => JSX.Element;
     };
 
 type Props = {
@@ -37,46 +27,12 @@ type Props = {
   cardMode: "ROW" | "COLUMN";
 } & BtnsType;
 
-// gql
-const HANDLE_FRIENDSHIP_REQUEST = gql`
-  mutation HandleFriendShipRequest(
-    $handleFriendshipRequestData: HandleFriendShipRequestInput!
-  ) {
-    handleFriendShipRequest(
-      handleFriendshipRequestData: $handleFriendshipRequestData
-    ) {
-      id
-    }
-  }
-`;
-
 const UserCard = (props: Props) => {
   const {
     user: { _id, username, profilePicture },
-    btnsType,
+    btnType,
     cardMode,
   } = props;
-
-  const { refreshCount } = useContext(userNotificationsCountContext);
-
-  const [handleFriendshipRequest, { loading: handleFriendshipRequestLoading }] =
-    useMutation(HANDLE_FRIENDSHIP_REQUEST, {
-      onCompleted(data) {
-        refreshCount("friendshipRequests");
-
-        const userId = data?.handleFriendShipRequest?.id;
-
-        if (props.btnsType === "HANDLE_FRIENDSHIP_REQUEST" && userId)
-          props.onHandleRequestCompleted?.(userId);
-      },
-      onError({ graphQLErrors }) {
-        toast.error(
-          graphQLErrors?.[0]?.message ||
-            "can't handle this friendship request at the momment",
-          { duration: 7500 }
-        );
-      },
-    });
 
   const styles = {
     li:
@@ -99,7 +55,7 @@ const UserCard = (props: Props) => {
   };
 
   return (
-    <li key={_id} className={styles.li}>
+    <li className={styles.li}>
       <Link href={`/user/${_id}`}>
         {profilePicture?.secure_url ? (
           <Image
@@ -126,47 +82,7 @@ const UserCard = (props: Props) => {
         {showUserName(username)}
       </Link>
 
-      {btnsType === "HANDLE_FRIENDSHIP_REQUEST" && (
-        <div className="space-y-2 p-2 [&>*]:w-full">
-          <Button
-            onClick={() => {
-              handleFriendshipRequest({
-                variables: {
-                  handleFriendshipRequestData: {
-                    userId: _id,
-                    acception: true,
-                  },
-                },
-              });
-            }}
-            disabled={handleFriendshipRequestLoading}
-            className={styles.button}
-          >
-            <FaCheckCircle />
-            Accept
-          </Button>
-
-          <Button
-            onClick={() => {
-              handleFriendshipRequest({
-                variables: {
-                  handleFriendshipRequestData: {
-                    userId: _id,
-                    acception: false,
-                  },
-                },
-              });
-            }}
-            className={`red-btn ${styles.button}`}
-            disabled={handleFriendshipRequestLoading}
-          >
-            <MdBlock />
-            Cancel
-          </Button>
-        </div>
-      )}
-
-      {btnsType === "VIEW_PROFILE" && (
+      {btnType === "VIEW_PROFILE" && (
         <Button asChild className={styles.button}>
           <Link href={`/user/${_id}`}>
             <FaEye />
@@ -174,6 +90,8 @@ const UserCard = (props: Props) => {
           </Link>
         </Button>
       )}
+
+      {btnType === "CUSTOM" && <props.customCardBtn btnStyle={styles.button} />}
     </li>
   );
 };

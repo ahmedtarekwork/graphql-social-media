@@ -180,17 +180,18 @@ const SavedPostsPage = () => {
         ))}
       </ul>
 
-      {fetchMoreLoading && (
-        <Loading size={16} withText withFullHeight={false} />
-      )}
-
       {!isFinalPage && (
         <Button
           onClick={handleFetchMore}
-          disabled={loading || fetchMoreLoading}
+          className="w-fit mx-auto mt-4"
+          disabled={fetchMoreLoading || loading}
         >
-          See More
+          {fetchMoreLoading || loading ? "Loading..." : "See more"}
         </Button>
+      )}
+
+      {fetchMoreLoading && (
+        <Loading size={16} withText withFullHeight={false} />
       )}
     </div>
   );

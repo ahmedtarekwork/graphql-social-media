@@ -51,8 +51,10 @@ const TabsSwitcher = forwardRef<TabsSwitcherRefType, Props>(
           <ProfileSettings
             profilePictureRef={profilePictureRef}
             coverPictureRef={coverPictureRef}
-            profileInfo={profileOwner}
-            profileType="personal"
+            profile={{
+              profileInfo: profileOwner,
+              profileType: "personal",
+            }}
           />
         );
       }

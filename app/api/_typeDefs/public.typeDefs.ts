@@ -9,14 +9,6 @@ const publicTypeDefs = gql`
 
     profilePicture: ImageType
     coverPicture: ImageType
-
-    followedPages: [NotFullPageOrGroup!]!
-    ownedPages: [NotFullPageOrGroup!]
-    adminPages: [NotFullPageOrGroup!]
-
-    joinedGroups: [NotFullPageOrGroup!]!
-    adminGroups: [NotFullPageOrGroup!]!
-    ownedGroups: [NotFullPageOrGroup!]!
   }
 
   type Notification {
@@ -58,6 +50,12 @@ const publicTypeDefs = gql`
     isInBookMark: Boolean!
     isShared: Boolean!
     sharePerson: NotFullUser
+    communityInfo: NotFullCommunity
+  }
+
+  enum PicturesTypes {
+    profile
+    cover
   }
 
   type SharePostData {
@@ -81,10 +79,27 @@ const publicTypeDefs = gql`
     coverPicture: ImageType
   }
 
-  type NotFullPageOrGroup {
+  type NotFullCommunity {
     _id: ID!
     name: String!
     profilePicture: ImageType
+    followersCount: Int!
+    membersCount: Int!
+    owner: String
+  }
+  type NotFullPage {
+    _id: ID!
+    name: String!
+    profilePicture: ImageType
+    followersCount: Int!
+    owner: String
+  }
+  type NotFullGroup {
+    _id: ID!
+    name: String!
+    profilePicture: ImageType
+    membersCount: Int!
+    owner: String
   }
 
   enum Community {

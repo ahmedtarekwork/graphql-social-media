@@ -39,27 +39,17 @@ const userResolvers = {
       await handleConnectDB({
         publicErrorMsg: "something went wrong while getting user info",
         async resolveCallback() {
-          try {
-            const user = await User.findById(userId)
-              .select(
-                "-__v -password -notifications -friendsRequests -friendsList"
-              )
-              .populate("followedPages joinedGroups");
+          const user = await User.findById(userId).select(
+            "_id username profilePicture coverPicture email address"
+          );
 
-            if (!user) {
-              throw new GraphQLError("user with given id not found", {
-                extensions: { code: "NOT_FOUND" },
-              });
-            }
-
-            return user;
-          } catch (err) {
-            console.log(err);
-
-            throw new GraphQLError("can't get this user at the momment", {
-              extensions: { code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR },
+          if (!user) {
+            throw new GraphQLError("user with given id not found", {
+              extensions: { code: "NOT_FOUND" },
             });
           }
+
+          return user;
         },
       }),
 
@@ -111,9 +101,7 @@ const userResolvers = {
       await connectDB();
       const user = await validateToken(req, (userId) =>
         User.findById(userId)
-          .select(
-            "-__V -password -allPosts -savedPosts -notifications -friendsRequests -friendsList"
-          )
+          .select("_id username profilePicture coverPicture email address")
           .populate([
             {
               path: "followedPages joinedGroups ownedPages adminPages ownedGroups adminGroups",
@@ -569,173 +557,6 @@ const userResolvers = {
           };
         },
       }),
-
-    // pages
-    getUserFollowedPages: async (
-      _: unknown,
-      {
-        pagesPagination: { page = 1, limit = 0 },
-      }: { pagesPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg:
-          "something went wrong while getting your followed pages",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("followedPages")
-            .populate({
-              path: "followedPages",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.followedPages;
-        },
-      }),
-
-    getUserOwnedPage: async (
-      _: unknown,
-      {
-        pagesPagination: { page = 1, limit = 0 },
-      }: { pagesPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg: "something went wrong while getting your owned pages",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("ownedPages")
-            .populate({
-              path: "ownedPages",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.ownedPages;
-        },
-      }),
-
-    getuserAdminPages: async (
-      _: unknown,
-      {
-        pagesPagination: { page = 1, limit = 0 },
-      }: { pagesPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg:
-          "something went wrong while getting pages that you are admin in it",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("adminPages")
-            .populate({
-              path: "adminPages",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.adminPages;
-        },
-      }),
-
-    // groups
-    getUserJoinedGroups: async (
-      _: unknown,
-      {
-        groupsPagination: { page = 1, limit = 0 },
-      }: { groupsPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg: "something went wrong while getting your joined groups",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("joinedGroups")
-            .populate({
-              path: "joinedGroups",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.joinedGroups;
-        },
-      }),
-
-    getUserAdminGroups: async (
-      _: unknown,
-      {
-        groupsPagination: { page = 1, limit = 0 },
-      }: { groupsPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg:
-          "something went wrong while getting groups that you are admin in it",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("adminGroups")
-            .populate({
-              path: "adminGroups",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.adminGroups;
-        },
-      }),
-
-    getUserOwnedGroups: async (
-      _: unknown,
-      {
-        groupsPagination: { page = 1, limit = 0 },
-      }: { groupsPagination: Pagination },
-      { req }: APIContextFnType
-    ) =>
-      await handleConnectDB({
-        req,
-        validateToken: true,
-        publicErrorMsg: "something went wrong while getting your owned groups",
-
-        userQuery: (userId) => {
-          return User.findById(userId)
-            .select("ownedGroups")
-            .populate({
-              path: "ownedGroups",
-              select: "_id name profilePicture",
-              options: { limit, skip: (page - 1) * limit },
-            });
-        },
-
-        async resolveCallback(user) {
-          return user.ownedGroups;
-        },
-      }),
   },
 
   Mutation: {
@@ -865,25 +686,10 @@ const userResolvers = {
       return await handleConnectDB({
         async resolveCallback() {
           const existUser = (
-            await User.findOne(
-              { username },
-              { notifications: { $slice: [0, 10] } }
+            await User.findOne({ username }).select(
+              "_id username email address profilePicture coverPicture"
             )
-              .select("-__V -allPosts -savedPosts")
-              .populate([
-                {
-                  path: "friendsList followedPages joinedGroups ownedPages adminPages ownedGroups adminGroups",
-                  options: { limit: 10 },
-                },
-                {
-                  path: "friendsRequests",
-                  select: "username profilePicture _id",
-                  options: { limit: 10 },
-                },
-              ])
           )?._doc;
-
-          console.log("existUser", existUser);
 
           if (!existUser) {
             throw new GraphQLError("username not found", {
@@ -1420,7 +1226,7 @@ const userResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while deleting your account",
 
-        userQuery: (userId) => {
+        userQuery: (userId: string) => {
           return User.findByIdAndDelete(userId)
             .select(
               "followedPages adminPages ownedPages joinedGroups adminGroups ownedGroups friendList allPosts profilePicture coverPicture"
@@ -1437,24 +1243,37 @@ const userResolvers = {
             ]);
         },
 
-        async resolveCallback(authUser) {
+        async resolveCallback(authUser: any) {
           // pages promises
-          const removeUserFromFollowedAndAdminPages = Page.updateMany(
+
+          const removeUserFromFollowedPages = Page.updateMany(
             {
               _id: {
-                $or: [...authUser.followedPages, ...authUser.adminPages],
+                $or: authUser.followedPages,
+              },
+            },
+            {
+              $inc: { followersCount: -1 },
+            }
+          );
+          const removeUserFromAdminPages = Page.updateMany(
+            {
+              _id: {
+                $or: authUser.adminPages,
               },
             },
             {
               $pull: {
                 admins: authUser._id,
               },
-              $inc: { followersCount: -1 },
             }
           );
 
           const ownedPagesAdminIDs = authUser.ownedPages
-            .map((page) => (page as unknown as { admins: string[] }).admins)
+            .map(
+              (page: PageType) =>
+                (page as unknown as { admins: string[] }).admins
+            )
             .flat(Infinity);
 
           const removeAdminsFromOwnedPages = User.updateMany(
@@ -1475,13 +1294,13 @@ const userResolvers = {
           const removeAllFollowersFromOwnedPages = User.updateMany(
             {
               followedPages: {
-                $or: authUser.ownedPages.map((page) => page._id),
+                $or: authUser.ownedPages.map((page: PageType) => page._id),
               },
             },
             {
               $pull: {
                 followedPages: {
-                  $or: authUser.ownedPages.map((page) => page._id),
+                  $or: authUser.ownedPages.map((page: PageType) => page._id),
                 },
               },
             }
@@ -1489,7 +1308,7 @@ const userResolvers = {
 
           const removeOwnedPages = Page.deleteMany({
             _id: {
-              $or: authUser.ownedPages.map((page) => page._id),
+              $or: authUser.ownedPages.map((page: PageType) => page._id),
             },
           });
 
@@ -1509,7 +1328,10 @@ const userResolvers = {
           );
 
           const ownedGroupsAdminIDs = authUser.ownedGroups
-            .map((page) => (page as unknown as { admins: string[] }).admins)
+            .map(
+              (page: PageType) =>
+                (page as unknown as { admins: string[] }).admins
+            )
             .flat(Infinity);
 
           const removeAdminsFromOwnedGroups = User.updateMany(
@@ -1530,13 +1352,15 @@ const userResolvers = {
           const removeAllFollowersFromOwnedGroups = User.updateMany(
             {
               followedGroups: {
-                $or: authUser.ownedGroups.map((group) => group._id),
+                $or: authUser.ownedGroups.map((group: GroupType) => group._id),
               },
             },
             {
               $pull: {
                 followedGroups: {
-                  $or: authUser.ownedGroups.map((group) => group._id),
+                  $or: authUser.ownedGroups.map(
+                    (group: GroupType) => group._id
+                  ),
                 },
               },
             }
@@ -1544,7 +1368,7 @@ const userResolvers = {
 
           const removeOwnedGroups = Group.deleteMany({
             _id: {
-              $or: authUser.ownedGroups.map((group) => group._id),
+              $or: authUser.ownedGroups.map((group: GroupType) => group._id),
             },
           });
 
@@ -1568,8 +1392,8 @@ const userResolvers = {
               },
               {
                 communityId: [
-                  ...authUser.ownedPages.map((page) => page._id),
-                  ...authUser.ownedGroups.map((group) => group._id),
+                  ...authUser.ownedPages.map((page: PageType) => page._id),
+                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
                 ],
               },
             ],
@@ -1599,8 +1423,8 @@ const userResolvers = {
               },
               {
                 communityId: [
-                  ...authUser.ownedPages.map((page) => page._id),
-                  ...authUser.ownedGroups.map((group) => group._id),
+                  ...authUser.ownedPages.map((page: PageType) => page._id),
+                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
                 ],
               },
             ],
@@ -1613,8 +1437,8 @@ const userResolvers = {
               { post: ownedPosts.map((post) => post.post._id) },
               {
                 communityId: [
-                  ...authUser.ownedPages.map((page) => page._id),
-                  ...authUser.ownedGroups.map((group) => group._id),
+                  ...authUser.ownedPages.map((page: PageType) => page._id),
+                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
                 ],
               },
             ],
@@ -1626,8 +1450,8 @@ const userResolvers = {
               { post: ownedPosts.map((post) => post.post._id) },
               {
                 communityId: [
-                  ...authUser.ownedPages.map((page) => page._id),
-                  ...authUser.ownedGroups.map((group) => group._id),
+                  ...authUser.ownedPages.map((page: PageType) => page._id),
+                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
                 ],
               },
             ],
@@ -1651,7 +1475,8 @@ const userResolvers = {
               getPostsMediaIDs,
 
               // pages
-              removeUserFromFollowedAndAdminPages,
+              removeUserFromFollowedPages,
+              removeUserFromAdminPages,
               removeAdminsFromOwnedPages,
               removeAllFollowersFromOwnedPages,
               removeOwnedPages,
@@ -1671,7 +1496,7 @@ const userResolvers = {
             authUser.coverPicture?.public_id,
 
             ...authUser.ownedGroups
-              .map((group) => {
+              .map((group: GroupType) => {
                 const theGroup = group as Pick<
                   GroupType,
                   "_id" | "admins" | "coverPicture" | "profilePicture"
@@ -1685,7 +1510,7 @@ const userResolvers = {
               .flat(Infinity),
 
             ...authUser.ownedPages
-              .map((page) => {
+              .map((page: PageType) => {
                 const thePage = page as Pick<
                   PageType,
                   "_id" | "admins" | "coverPicture" | "profilePicture"

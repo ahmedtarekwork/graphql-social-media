@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { authContext } from "@/contexts/AuthContext";
 
 // gql
-import { gql, useMutation } from "@apollo/client";
+import { type DocumentNode, gql, useMutation } from "@apollo/client";
 
 // icons
 import { IoMdRemoveCircle } from "react-icons/io";
@@ -28,36 +28,89 @@ import { IoMdRemoveCircle } from "react-icons/io";
 import { toast } from "sonner";
 
 // types
-import type { UserType } from "@/lib/types";
+import { type ProfileSettingsProfileTypeProps } from "./ProfileSettings";
+import { useParams } from "next/navigation";
 
 type Props = {
   pictureType: "cover" | "profile";
+  profile: Omit<ProfileSettingsProfileTypeProps, "setOpenSettings">;
 };
 
-const RemovePictureSlice = ({ pictureType }: Props) => {
-  const { user, setUser } = useContext(authContext);
+const RemovePictureSlice = ({ pictureType, profile }: Props) => {
+  const { profileType, updateQuery, profileInfo } = profile;
 
-  const REMOVE_PICTURE = gql`
-    mutation RemovePicture($pictureType: PicturesTypes!) {
+  const pageId = (useParams()?.pageId || "") as string;
+
+  const pictureName = `${pictureType}Picture`;
+
+  const { setUser } = useContext(authContext);
+
+  const REMOVE_USER_PICTURE = gql`
+    mutation RemoveUserPicture($pictureType: PicturesTypes!) {
       removeUserProfileOrCoverPicture(pictureType: $pictureType) {
         message
       }
     }
   `;
+  const REMOVE_PAGE_PICTURE = gql`
+    mutation RemovePagePicture($removePictureInfo: RemovePictureInfoInput!) {
+      removePageProfileOrCoverPicture(removePictureInfo: $removePictureInfo) {
+        message
+      }
+    }
+  `;
 
-  const [removePicture, { loading }] = useMutation(REMOVE_PICTURE, {
+  let query: DocumentNode;
+
+  switch (profileType) {
+    case "personal": {
+      query = REMOVE_USER_PICTURE;
+      break;
+    }
+    case "page": {
+      query = REMOVE_PAGE_PICTURE;
+      break;
+    }
+    case "group": {
+      query = REMOVE_PAGE_PICTURE;
+      break;
+    }
+  }
+
+  const [removePicture, { loading }] = useMutation(query, {
     onCompleted() {
-      setUser(
-        (prev) => ({ ...prev, [`${pictureType}Picture`]: null } as UserType)
-      );
+      switch (profileType) {
+        case "personal": {
+          setUser((prev) => ({ ...prev!, [`${pictureType}Picture`]: null }));
+          break;
+        }
+        case "page": {
+          updateQuery?.((prev) => ({
+            ...prev!,
+            getPageInfo: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...(prev as any)!.getPageInfo,
+              [pictureName]: null,
+            },
+          }));
+          break;
+        }
+      }
 
-      toast.success(`your ${pictureType} picture removed successfully`, {
-        duration: 8000,
-      });
+      toast.success(
+        `${
+          profileType === "personal" ? "your" : profileType
+        } ${pictureType} picture removed successfully`,
+        {
+          duration: 8000,
+        }
+      );
     },
 
     onError({ graphQLErrors }) {
-      let message = `something went wrong while removing your ${pictureType} picture`;
+      let message = `something went wrong while removing ${
+        profileType === "personal" ? "your" : profileType
+      } ${pictureType} picture`;
       if (graphQLErrors.length) message = graphQLErrors[0].message;
 
       toast.error(message, { duration: 8000 });
@@ -65,7 +118,7 @@ const RemovePictureSlice = ({ pictureType }: Props) => {
   });
 
   return (
-    <div className="setting-slice bg-red-300 border-l-red-800">
+    <div className="red-setting-slice">
       <p>remove {pictureType} picture</p>
 
       <AlertDialog>
@@ -73,7 +126,7 @@ const RemovePictureSlice = ({ pictureType }: Props) => {
           asChild
           className="red-btn"
           disabled={
-            loading || !user?.[`${pictureType}Picture` as keyof typeof user]
+            loading || !profileInfo?.[pictureName as keyof typeof profileInfo]
           }
         >
           <AlertDialogTrigger>
@@ -96,11 +149,33 @@ const RemovePictureSlice = ({ pictureType }: Props) => {
             <Button
               asChild
               className="red-btn"
-              onClick={() =>
+              onClick={() => {
+                let variables: Record<string, unknown>;
+
+                switch (profileType) {
+                  case "personal": {
+                    variables = { pictureType };
+                    break;
+                  }
+                  case "page": {
+                    variables = {
+                      removePictureInfo: {
+                        pageId,
+                        pictureType,
+                      },
+                    };
+                    break;
+                  }
+                  case "group": {
+                    variables = { pictureType };
+                    break;
+                  }
+                }
+
                 removePicture({
-                  variables: { pictureType },
-                })
-              }
+                  variables,
+                });
+              }}
             >
               <AlertDialogAction>
                 <IoMdRemoveCircle />

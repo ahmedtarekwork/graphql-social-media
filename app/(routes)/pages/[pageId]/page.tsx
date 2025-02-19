@@ -4,12 +4,20 @@
 import { useParams } from "next/navigation";
 
 // react
-import { useRef } from "react";
+import { useContext, useRef, useState } from "react";
+
+// contexts
+import { authContext } from "@/contexts/AuthContext";
+
+// providers
+import PostsProvider from "@/contexts/PostsContext";
 
 // components
 import IllustrationPage from "@/components/IllustrationPage";
 import ProfileTopInfo from "@/components/profiles/ProfileTopInfo";
 import Loading from "@/components/Loading";
+import PostForm from "@/components/Posts/postForm/PostForm";
+import PostsPreviewer from "@/components/Posts/PostsPreviewer";
 
 // gql
 import { gql, useQuery } from "@apollo/client";
@@ -29,9 +37,11 @@ const GET_SINGLE_PAGE = gql`
       name
       profilePicture {
         secure_url
+        public_id
       }
       coverPicture {
         secure_url
+        public_id
       }
       followersCount
       owner {
@@ -41,24 +51,42 @@ const GET_SINGLE_PAGE = gql`
   }
 `;
 
-// const GET_PAGE_POSTS = gql`
-// query
-// `
-// const IS_USER_FOLLOW_THIS_PAGE = gql`
-// query
-// `
+const IS_USER_ADMIN_IN_PAGE = gql`
+  query IsUserAdminInPage($pageId: ID!) {
+    isUserAdminInPage(pageId: $pageId) {
+      isUserAdminInPage
+    }
+  }
+`;
 
 const SinglePagePage = () => {
   const pageId = useParams()?.pageId;
-
-  const coverPictureRef = useRef<ProfileAndCoverPictureRefType>(null);
-  const profilePictureRef = useRef<ProfileAndCoverPictureRefType>(null);
 
   const { loading, data, error, updateQuery } = useQuery(GET_SINGLE_PAGE, {
     variables: { pageId },
   });
 
+  const { user } = useContext(authContext);
+
+  const {
+    loading: getIsUserAdminLoading,
+    data: getIsUserAdminData,
+    updateQuery: isUserAdminUpdateQuery,
+  } = useQuery(IS_USER_ADMIN_IN_PAGE, { variables: { pageId } });
+
+  const isUserAdmin = getIsUserAdminData?.isUserAdminInPage?.isUserAdminInPage;
   const pageInfo = data?.getPageInfo as PageType;
+  const isUserOwner =
+    (pageInfo as PageType)?.owner?._id?.toString() === user?._id?.toString();
+
+  const normalUser = !getIsUserAdminLoading && !isUserOwner && !isUserAdmin;
+
+  const coverPictureRef = useRef<ProfileAndCoverPictureRefType>(null);
+  const profilePictureRef = useRef<ProfileAndCoverPictureRefType>(null);
+  const skipCount = useRef(0);
+
+  const [fetchMoreLoading, setFetchMoreLoading] = useState(false);
+  const [stopFetchMore, setStopFetchMore] = useState(false);
 
   if (!pageId) {
     return (
@@ -82,7 +110,6 @@ const SinglePagePage = () => {
     );
   }
 
-  console.log(pageInfo);
   return (
     <div className="-mt-4">
       <ProfileTopInfo
@@ -91,8 +118,37 @@ const SinglePagePage = () => {
         coverPictureRef={coverPictureRef}
         profilePictureRef={profilePictureRef}
         pageInfo={pageInfo}
+        isUserAdminUpdateQuery={isUserAdminUpdateQuery}
+        normalUser={normalUser}
+        isUserOwner={isUserOwner}
       />
       <div className="bg-primary h-0.5" />
+
+      <div className="space-y-2 mt-2">
+        <PostsProvider>
+          {!normalUser && (
+            <PostForm
+              profileInfo={pageInfo}
+              profileType="page"
+              mode="new"
+              fetchMoreLoading={fetchMoreLoading}
+              setStopFetchMore={setStopFetchMore}
+              skipCount={skipCount}
+              homePage={false}
+            />
+          )}
+
+          <PostsPreviewer
+            fetchMoreLoading={fetchMoreLoading}
+            mode="singlePageInfoPage"
+            setFetchMoreLoading={setFetchMoreLoading}
+            setStopFetchMore={setStopFetchMore}
+            stopFetchMore={stopFetchMore}
+            skipCount={skipCount}
+            normalUser={normalUser}
+          />
+        </PostsProvider>
+      </div>
     </div>
   );
 };

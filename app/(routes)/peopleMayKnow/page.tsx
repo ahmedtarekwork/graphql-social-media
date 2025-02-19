@@ -1,10 +1,7 @@
 "use client";
 
-// nextjs
-import Link from "next/link";
-
 // react
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 // components
 import Loading from "@/components/Loading";
@@ -22,6 +19,8 @@ import buzzleSVG from "/public/illustrations/buzzle.svg";
 
 // types
 import type { NotFullUserType } from "@/lib/types";
+
+// icons
 import { FaArrowRotateLeft } from "react-icons/fa6";
 
 const GET_PEOPLE = gql`
@@ -32,6 +31,7 @@ const GET_PEOPLE = gql`
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
 
@@ -51,11 +51,8 @@ const PeopleMayKnowPage = () => {
     },
   });
 
-  useEffect(() => {
-    console.log("data", data);
-  }, [data]);
-
   const users = data?.getAllUsers?.users || [];
+  const isFinalPage = !!data?.getAllUsers?.isFinalPage;
 
   if (loading) return <Loading />;
 
@@ -83,14 +80,9 @@ const PeopleMayKnowPage = () => {
   if (!users.length && !error && !loading) {
     return (
       <IllustrationPage
-        content="No users have been register in our database, be the first"
+        content="No users have been register in our database insted of you"
         btn={{
-          type: "custom",
-          component: (
-            <Button asChild className="w-fit mx-auto">
-              <Link href="/signup">Register</Link>
-            </Button>
-          ),
+          type: "go-to-home",
         }}
         svg={buzzleSVG}
       />
@@ -98,6 +90,8 @@ const PeopleMayKnowPage = () => {
   }
 
   const handleFetchMoreUsers = () => {
+    if (loading || fetchMoreLoading || isFinalPage || error) return;
+
     pageAndLimit.current.page += 1;
 
     setFetchMoreLoading(true);
@@ -137,21 +131,22 @@ const PeopleMayKnowPage = () => {
           <UserCard
             user={user}
             cardMode="COLUMN"
-            btnsType="VIEW_PROFILE"
+            btnType="VIEW_PROFILE"
             key={user._id}
           />
         ))}
       </ul>
 
-      {!data?.getAllUsers?.isFinalPage && (
+      {!isFinalPage && (
         <Button
-          className="block mx-auto"
           onClick={handleFetchMoreUsers}
-          disabled={fetchMoreLoading}
+          className="w-fit mx-auto mt-4"
+          disabled={fetchMoreLoading || loading}
         >
-          See more
+          {fetchMoreLoading || loading ? "Loading..." : "See more"}
         </Button>
       )}
+
       {fetchMoreLoading && (
         <Loading size={16} withText withFullHeight={false} />
       )}

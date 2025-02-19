@@ -15,7 +15,7 @@ import { MdHome } from "react-icons/md";
 // types
 import type { StaticImport } from "next/dist/shared/lib/get-img-props";
 
-type BtnType =
+export type IllustrationPageBtnType =
   | {
       type: "go-to-home";
       component?: never;
@@ -28,7 +28,7 @@ type BtnType =
 type Props = {
   content: ReactNode;
   svg: StaticImport;
-  btn: BtnType;
+  btn: IllustrationPageBtnType;
 };
 
 const IllustrationPage = ({ content, svg, btn }: Props) => {

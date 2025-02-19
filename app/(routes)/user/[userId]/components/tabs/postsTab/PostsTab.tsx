@@ -1,6 +1,9 @@
 // react
 import { useRef, useState } from "react";
 
+// providers
+import PostsProvider from "@/contexts/PostsContext";
+
 // components
 import FriendsSection from "./components/FriendsSection";
 import PostForm from "../../../../../../../components/Posts/postForm/PostForm";
@@ -31,27 +34,30 @@ const PostsTab = ({ profileOwner }: Props) => {
           {isCurrentUserProfile ? "Your" : "Available"} Posts
         </h2>
 
-        {/* add new post section */}
-        {isCurrentUserProfile && (
-          <PostForm
-            mode="new"
-            skipCount={skipCount}
-            fetchMoreLoading={fetchMoreLoading}
-            setStopFetchMore={setStopFetchMore}
-            homePage={false}
-          />
-        )}
+        <PostsProvider>
+          {/* add new post section */}
+          {isCurrentUserProfile && (
+            <PostForm
+              profileType="personal"
+              mode="new"
+              skipCount={skipCount}
+              fetchMoreLoading={fetchMoreLoading}
+              setStopFetchMore={setStopFetchMore}
+              homePage={false}
+            />
+          )}
 
-        <PostsPreviewer
-          mode="profilePage"
-          stopFetchMore={stopFetchMore}
-          setStopFetchMore={setStopFetchMore}
-          profileOwner={profileOwner}
-          skipCount={skipCount}
-          isCurrentUserProfile={isCurrentUserProfile}
-          fetchMoreLoading={fetchMoreLoading}
-          setFetchMoreLoading={setFetchMoreLoading}
-        />
+          <PostsPreviewer
+            mode="profilePage"
+            stopFetchMore={stopFetchMore}
+            setStopFetchMore={setStopFetchMore}
+            profileOwner={profileOwner}
+            skipCount={skipCount}
+            isCurrentUserProfile={isCurrentUserProfile}
+            fetchMoreLoading={fetchMoreLoading}
+            setFetchMoreLoading={setFetchMoreLoading}
+          />
+        </PostsProvider>
       </div>
 
       {/* friends section */}

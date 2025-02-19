@@ -13,35 +13,7 @@ const ApolloContext = ({ children }: { children: ReactNode }) => {
       : process.env.NEXT_PUBLIC_PRODUCTION_VERSION_URL;
 
   const client = new ApolloClient({
-    cache: new InMemoryCache({
-      typePolicies: {
-        Query: {
-          fields: {
-            getCurrentUserPosts: {
-              keyArgs: false,
-              merge(existing = { posts: [], isFinalPage: false }, incoming) {
-                const postsMap = new Map([]);
-
-                // Add existing posts to the map
-                existing.posts.forEach((post: { __ref: string }) => {
-                  postsMap.set(post.__ref, post);
-                });
-
-                // Add incoming posts to the map, replacing any duplicates
-                incoming.posts.forEach((post: { __ref: string }) => {
-                  postsMap.set(post.__ref, post);
-                });
-
-                return {
-                  ...incoming,
-                  posts: Array.from(postsMap.values()),
-                };
-              },
-            },
-          },
-        },
-      },
-    }),
+    cache: new InMemoryCache(),
     uri: `${hostName}/api/graphql`,
   });
 

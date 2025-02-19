@@ -1,3 +1,6 @@
+// nextjs
+import Link from "next/link";
+
 // react
 import { type Dispatch, type SetStateAction } from "react";
 
@@ -22,41 +25,41 @@ import { type IconType } from "react-icons";
 // icons
 import { FaHandBackFist, FaHeartCircleCheck } from "react-icons/fa6";
 import { RiAdminFill } from "react-icons/ri";
-import { MdExplore } from "react-icons/md";
+import { MdExplore, MdFiberNew } from "react-icons/md";
 import { FaBars } from "react-icons/fa";
 
 type Props = {
   setPagesType: Dispatch<SetStateAction<PagesType>>;
 };
 
-const PagesSidebar = ({ setPagesType }: Props) => {
-  const sidebarItems: {
-    content: string;
-    type: PagesType;
-    Icon: IconType;
-  }[] = [
-    {
-      content: "owned pages",
-      type: "owned",
-      Icon: FaHandBackFist,
-    },
-    {
-      content: "admin pages",
-      type: "admin",
-      Icon: RiAdminFill,
-    },
-    {
-      content: "followed pages",
-      type: "followed",
-      Icon: FaHeartCircleCheck,
-    },
-    {
-      content: "explore pages",
-      type: "explore",
-      Icon: MdExplore,
-    },
-  ];
+const sidebarItems: {
+  content: string;
+  type: PagesType;
+  Icon: IconType;
+}[] = [
+  {
+    content: "owned pages",
+    type: "owned",
+    Icon: FaHandBackFist,
+  },
+  {
+    content: "admin pages",
+    type: "admin",
+    Icon: RiAdminFill,
+  },
+  {
+    content: "followed pages",
+    type: "followed",
+    Icon: FaHeartCircleCheck,
+  },
+  {
+    content: "explore pages",
+    type: "explore",
+    Icon: MdExplore,
+  },
+];
 
+const PagesSidebar = ({ setPagesType }: Props) => {
   const { isMobile, toggleSidebar } = useSidebar();
 
   return (
@@ -88,13 +91,29 @@ const PagesSidebar = ({ setPagesType }: Props) => {
                   <SidebarMenuItem key={type}>
                     <Button
                       className="w-full !py-6 flex justify-start"
-                      onClick={() => setPagesType(type)}
+                      onClick={() => {
+                        setPagesType(type);
+                        toggleSidebar();
+                      }}
                     >
                       <Icon size={22} />
                       {content}
                     </Button>
                   </SidebarMenuItem>
                 ))}
+
+                <SidebarMenuItem>
+                  <Button asChild>
+                    <Link
+                      href="/pages/new"
+                      className="w-full !py-6 flex !justify-start"
+                      onClick={toggleSidebar}
+                    >
+                      <MdFiberNew size={22} />
+                      create new page
+                    </Link>
+                  </Button>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

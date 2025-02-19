@@ -33,11 +33,23 @@ const GET_SINGLE_POST = gql`
       }
       privacy
       community
+      communityId
+      communityInfo {
+        owner
+      }
       blockComments
 
       owner {
         _id
       }
+    }
+  }
+`;
+
+const IS_USER_ADMIN_IN_PAGE = gql`
+  query IsUserAdminInPage($pageId: ID!) {
+    isUserAdminInPage(pageId: $pageId) {
+      isUserAdminInPage
     }
   }
 `;
@@ -51,6 +63,36 @@ const EditPostPage = () => {
     GET_SINGLE_POST,
     { variables: { postId } }
   );
+
+  const [
+    getIsUserAdminInPage,
+    { loading: getIsUserAdminInPageLoading, data: getIsUserAdminInPageData },
+  ] = useLazyQuery(IS_USER_ADMIN_IN_PAGE);
+
+  const oldPost = data?.getSinglePost;
+  const isUserAdmin =
+    getIsUserAdminInPageData?.isUserAdminInPage?.isUserAdminInPage;
+
+  let hasAccess = false;
+
+  switch (oldPost?.community) {
+    case "personal": {
+      hasAccess = data.getSinglePost.owner._id !== user!._id;
+      break;
+    }
+    default: {
+      hasAccess =
+        isUserAdmin || oldPost.communityInfo.owner.toString() === user?._id;
+      break;
+    }
+  }
+
+  useEffect(() => {
+    if (data?.getSinglePost?.community === "page")
+      getIsUserAdminInPage({
+        variables: { pageId: data?.getSinglePost?.communityId },
+      });
+  }, [data]);
 
   useEffect(() => {
     if (postId) getSinglePost();
@@ -67,9 +109,9 @@ const EditPostPage = () => {
     );
   }
 
-  if (loading) return <Loading />;
+  if (loading || getIsUserAdminInPageLoading) return <Loading />;
 
-  if (!loading && !data && error) {
+  if (!loading && !getIsUserAdminInPageLoading && !data && error) {
     return (
       <IllustrationPage
         svg={errorLaptopSVG}
@@ -82,7 +124,7 @@ const EditPostPage = () => {
     );
   }
 
-  if (!data) {
+  if (!oldPost) {
     return (
       <IllustrationPage
         svg={errorLaptopSVG}
@@ -92,17 +134,15 @@ const EditPostPage = () => {
     );
   }
 
-  if (data.getSinglePost.owner._id !== user!._id) {
+  if (!hasAccess) {
     return (
       <IllustrationPage
-        content="you are not the owner of this post, post owner only can update the post"
+        content="you don't have access to update this post info"
         btn={{ type: "go-to-home" }}
         svg={_403SVG}
       />
     );
   }
-
-  console.log(data);
 
   return (
     <div className="my-4">

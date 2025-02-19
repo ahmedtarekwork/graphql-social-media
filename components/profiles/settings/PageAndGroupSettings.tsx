@@ -1,7 +1,10 @@
+// nextjs
+import { useParams } from "next/navigation";
+
 // react
 import {
-  useContext,
   useState,
+  useContext,
 
   // types
   type Dispatch,
@@ -9,11 +12,16 @@ import {
   type RefObject,
 } from "react";
 
-// contexts
+// context
 import { authContext } from "@/contexts/AuthContext";
 
 // components
 import ProfileSettings from "./ProfileSettings";
+import AdminsList from "./admins/AdminsList";
+import AddNewAdminBtn from "./admins/AddNewAdminBtn";
+import SettingSlice from "@/app/(routes)/user/[userId]/components/SettingSlice";
+import DisclaimerFromPageBtn from "./dangerZone/DisclaimerFromPageBtn";
+import DeletePageBtn from "./dangerZone/DeletePageBtn";
 
 // shadcn
 import {
@@ -29,6 +37,7 @@ import { Button } from "../../ui/button";
 
 // icons
 import { IoSettings } from "react-icons/io5";
+import { FaEye } from "react-icons/fa";
 
 // types
 import { type ProfileAndCoverPictureRefType } from "../ProfileAndCoverPicture";
@@ -40,12 +49,12 @@ export type PageAndGroupSettingsProfileType = {
   | {
       profileType: "page";
       profileInfo: PageType;
-      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // page info
     }
   | {
       profileType: "group";
       profileInfo: GroupType;
-      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // group info
     }
 );
 
@@ -53,17 +62,27 @@ type Props = {
   profilePictureRef: RefObject<ProfileAndCoverPictureRefType>;
   coverPictureRef: RefObject<ProfileAndCoverPictureRefType>;
   profile: PageAndGroupSettingsProfileType;
+} & {
+  isUserOwner: boolean;
+  isUserAdminUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
 };
 
 const PageAndGroupSettings = ({
   profilePictureRef,
   coverPictureRef,
   profile,
+  isUserAdminUpdateQuery,
+  isUserOwner,
 }: Props) => {
-  const [openSettings, setOpenSettings] = useState(false);
-  const { user } = useContext(authContext);
+  const pageId = (useParams()?.pageId || "") as string;
 
-  if (profile.profileInfo.owner._id.toString() !== user?._id.toString()) return;
+  const { user } = useContext(authContext);
+  const [openSettings, setOpenSettings] = useState(false);
+
+  const settingsSliceProps =
+    profile.profileType === "page"
+      ? { profileType: "page" as const, pageId }
+      : { profileType: "group" as const, groupId: "" };
 
   return (
     <Dialog open={openSettings} onOpenChange={setOpenSettings}>
@@ -76,7 +95,7 @@ const PageAndGroupSettings = ({
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="underline underline-offset-[7px] text-primary capitalize">
+          <DialogTitle className="mb-4 text-center underline underline-offset-[7px] text-primary capitalize">
             {profile.profileType} settings
           </DialogTitle>
 
@@ -86,12 +105,64 @@ const PageAndGroupSettings = ({
             </DialogDescription>
           </VisuallyHidden>
 
+          <div className="space-y-2">
+            <h3 className="text-secondary text-left font-bold underline ">
+              {profile.profileType} admins
+            </h3>
+
+            <div className="setting-slice">
+              add new admin
+              <AddNewAdminBtn />
+            </div>
+
+            <div className="setting-slice">
+              admins list
+              <Dialog>
+                <Button asChild>
+                  <DialogTrigger>
+                    <FaEye />
+                    Show
+                  </DialogTrigger>
+                </Button>
+
+                <AdminsList
+                  profileType={profile.profileType}
+                  isUserOwner={isUserOwner}
+                />
+              </Dialog>
+            </div>
+          </div>
+
           <ProfileSettings
             profilePictureRef={profilePictureRef}
             coverPictureRef={coverPictureRef}
-            {...profile}
-            setOpenSettings={setOpenSettings}
+            profile={profile}
           />
+
+          <SettingSlice
+            {...settingsSliceProps}
+            updateQuery={profile.updateQuery}
+            settingName="name"
+            settingValue={profile.profileInfo.name}
+          />
+
+          <div className="danger-zone">
+            <h3 className="danger-zone-title">Danger Zone</h3>
+
+            {user?._id === profile.profileInfo.owner._id ? (
+              <div className="red-setting-slice">
+                delete {profile.profileType}
+                <DeletePageBtn />
+              </div>
+            ) : (
+              <div className="red-setting-slice">
+                disclaimer from {profile.profileType}
+                <DisclaimerFromPageBtn
+                  isUserAdminUpdateQuery={isUserAdminUpdateQuery}
+                />
+              </div>
+            )}
+          </div>
         </DialogHeader>
       </DialogContent>
     </Dialog>

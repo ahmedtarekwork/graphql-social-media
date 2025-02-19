@@ -42,6 +42,7 @@ const GET_USER_FRIENDS = gql`
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
     }

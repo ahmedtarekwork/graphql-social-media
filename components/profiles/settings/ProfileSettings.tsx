@@ -1,12 +1,10 @@
-// nextjs
-import { useParams } from "next/navigation";
-
 // react
 import { type RefObject } from "react";
 
 // components
 import SettingSlice from "../../../app/(routes)/user/[userId]/components/SettingSlice";
 import RemovePictureSlice from "./RemovePictureSlice";
+import DeleteUserAccountBtn from "./dangerZone/DeleteUserAccountBtn";
 
 // shadcn
 import { Button } from "@/components/ui/button";
@@ -19,7 +17,7 @@ import { type ProfileAndCoverPictureRefType } from "../ProfileAndCoverPicture";
 import type { UserType } from "@/lib/types";
 import { type PageAndGroupSettingsProfileType } from "./PageAndGroupSettings";
 
-type ProfileSettingsProfileTypeProps =
+export type ProfileSettingsProfileTypeProps =
   | {
       profileType: "personal";
       profileInfo: UserType;
@@ -31,26 +29,19 @@ type ProfileSettingsProfileTypeProps =
 type Props = {
   coverPictureRef: RefObject<ProfileAndCoverPictureRefType>;
   profilePictureRef: RefObject<ProfileAndCoverPictureRefType>;
-} & ProfileSettingsProfileTypeProps;
+  profile: ProfileSettingsProfileTypeProps;
+};
 
 const ProfileSettings = ({
   coverPictureRef,
   profilePictureRef,
-  profileType,
-  profileInfo,
-  updateQuery,
-  setOpenSettings,
+  profile,
 }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
-
-  const settingsSliceProps =
-    profileType === "page"
-      ? { profileType: "page" as "page", pageId: pageId }
-      : { profileType: "group" as "group", groupId: "" };
+  const { profileType, profileInfo, setOpenSettings } = profile;
 
   return (
     <div className="space-y-2 text-left">
-      <div className="pb-4 space-y-2">
+      <div className="space-y-2">
         <h3 className="text-secondary font-bold underline ">profile picture</h3>
 
         <div className="setting-slice">
@@ -93,10 +84,19 @@ const ProfileSettings = ({
           </Button>
         </div>
 
-        <RemovePictureSlice pictureType="profile" />
+        <RemovePictureSlice
+          profile={
+            Object.fromEntries(
+              Object.entries(profile).filter(([key]) =>
+                ["profileInfo", "profileType", "updateQuery"].includes(key)
+              )
+            ) as Omit<ProfileSettingsProfileTypeProps, "setOpenSettings">
+          }
+          pictureType="profile"
+        />
       </div>
 
-      <div className="pb-4 space-y-2">
+      <div className="space-y-2">
         <h3 className="text-secondary font-bold underline">cover picture</h3>
 
         <div className="setting-slice">
@@ -139,7 +139,16 @@ const ProfileSettings = ({
           </Button>
         </div>
 
-        <RemovePictureSlice pictureType="cover" />
+        <RemovePictureSlice
+          profile={
+            Object.fromEntries(
+              Object.entries(profile).filter(([key]) =>
+                ["profileInfo", "profileType", "updateQuery"].includes(key)
+              )
+            ) as Omit<ProfileSettingsProfileTypeProps, "setOpenSettings">
+          }
+          pictureType="cover"
+        />
       </div>
 
       {profileType === "personal" && (
@@ -159,16 +168,16 @@ const ProfileSettings = ({
             settingName="address"
             settingValue={profileInfo.address}
           />
-        </>
-      )}
 
-      {profileType !== "personal" && (
-        <SettingSlice
-          {...settingsSliceProps}
-          updateQuery={updateQuery}
-          settingName="name"
-          settingValue={profileInfo.name}
-        />
+          <div className="danger-zone">
+            <h3 className="danger-zone-title">Danger Zone</h3>
+
+            <div className="red-setting-slice">
+              delete your account
+              <DeleteUserAccountBtn />
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

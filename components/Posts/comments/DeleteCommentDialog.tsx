@@ -70,13 +70,15 @@ const DeleteCommentDialog = ({
       toast.success("comment deleted successfully", { duration: 7500 });
     },
 
-    onError(error) {
-      console.log("error", error);
-
+    onError({ graphQLErrors }) {
       setStopFetchMore(false);
-      toast.error("can't delete this comment at the momment", {
-        duration: 7500,
-      });
+      toast.error(
+        graphQLErrors?.[0]?.message ||
+          "can't delete this comment at the momment",
+        {
+          duration: 7500,
+        }
+      );
     },
   });
 

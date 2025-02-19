@@ -5,6 +5,8 @@ import { useContext, useEffect, useState } from "react";
 import { userNotificationsCountContext } from "@/contexts/UserNotificationsCountContext";
 
 // components
+import Loading from "@/components/Loading";
+
 // shadcn
 import { Button } from "@/components/ui/button";
 
@@ -106,8 +108,6 @@ const FriendshipBtns = ({ userId }: Props) => {
             );
           }
         } catch (err) {
-          console.log(err);
-
           toast.error(
             "can't send friendship request to this user at the momment",
             { duration: 8000 }
@@ -163,8 +163,6 @@ const FriendshipBtns = ({ userId }: Props) => {
         }
       },
       onError({ graphQLErrors }) {
-        console.log(graphQLErrors);
-
         toast.error(
           graphQLErrors?.[0]?.message ||
             "can't handle this friendship request at the momment",
@@ -214,7 +212,11 @@ const FriendshipBtns = ({ userId }: Props) => {
 
   const [
     isUserMyFriendMethod,
-    { data: isUserMyFriendResponse, refetch: refetchIsProfileOwnerMyFriend },
+    {
+      data: isUserMyFriendResponse,
+      refetch: refetchIsProfileOwnerMyFriend,
+      loading: isProfileOwnerMyFriendLoading,
+    },
   ] = useLazyQuery(IS_PROFILE_OWNER_MY_FRIEND, {
     onCompleted(data) {
       if (data?.isUserMyFriend) {
@@ -228,6 +230,7 @@ const FriendshipBtns = ({ userId }: Props) => {
     {
       data: isCurrentUserSentRequest,
       refetch: refetchIsCurrentUserSentFriendshipRequest,
+      loading: isCurrentUserSentFriendshipRequestLoading,
     },
   ] = useLazyQuery(DOES_CURRENT_USER_SENT_FRIENDSHIP_REQUEST, {
     onCompleted(data) {
@@ -244,6 +247,7 @@ const FriendshipBtns = ({ userId }: Props) => {
     {
       data: isCurrentUserRecevedRequest,
       refetch: refetchIsCurrentUserRecevedFriendshipRequest,
+      loading: isCurrentUserRecevedFriendshipRequestLoading,
     },
   ] = useLazyQuery(DOES_CURRENT_USER_RECEVED_FRIENDSHIP_REQUEST, {
     onCompleted(data) {
@@ -276,6 +280,11 @@ const FriendshipBtns = ({ userId }: Props) => {
     isCurrentUserRecevedRequest?.doesCurrentUserRecevedFriendshipRequest?.status
   );
 
+  const initLoading =
+    isCurrentUserRecevedFriendshipRequestLoading ||
+    isProfileOwnerMyFriendLoading ||
+    isCurrentUserSentFriendshipRequestLoading;
+
   useEffect(() => {
     if (!isCurrentUserProfile && userId) {
       doesCurrentUserSentRequest({
@@ -288,9 +297,23 @@ const FriendshipBtns = ({ userId }: Props) => {
       });
       isUserMyFriendMethod({ variables: { userId } });
     }
-  }, []);
+  }, [
+    userId,
+    isCurrentUserProfile,
+    doesCurrentUserRecevedFriendshipRequest,
+    doesCurrentUserSentRequest,
+    isUserMyFriendMethod,
+  ]);
 
   if (isCurrentUserProfile) return;
+
+  if (initLoading) {
+    return (
+      <Button disabled>
+        <Loading withText size={18} fill="white" />
+      </Button>
+    );
+  }
 
   // if i sent friendship request to profile owner => render message to tell me that
   if (isCurrentUserSentFriendshipRequest) {

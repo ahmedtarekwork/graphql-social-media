@@ -1,10 +1,20 @@
 "use client";
 
 // react
-import { createContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+
+// contexts
+import { authContext } from "./AuthContext";
 
 // apollo
-import { gql, useQuery } from "@apollo/client";
+import { gql, useLazyQuery } from "@apollo/client";
 
 export const userNotificationsCountContext = createContext<
   Record<
@@ -42,12 +52,18 @@ const UserNotificationsCountContext = ({
 }: {
   children: ReactNode;
 }) => {
-  const {
-    loading: notificationsCountLoading,
-    data: notificationsCount,
-    error: notificationsCountErr,
-    refetch: refetchNotificationsCount,
-  } = useQuery(GET_NOTIFICATIONS_COUNT, {
+  const { user } = useContext(authContext);
+  const isFetched = useRef(false);
+
+  const [
+    getUserNotificationsCount,
+    {
+      loading: notificationsCountLoading,
+      data: notificationsCount,
+      error: notificationsCountErr,
+      refetch: refetchNotificationsCount,
+    },
+  ] = useLazyQuery(GET_NOTIFICATIONS_COUNT, {
     onCompleted(data) {
       setMainData((prev) => ({
         ...prev,
@@ -66,12 +82,15 @@ const UserNotificationsCountContext = ({
     },
   });
 
-  const {
-    loading: friendshipRequestsCountLoading,
-    data: friendshipRequestsCount,
-    error: friendshipRequestsCountErr,
-    refetch: refetchFriendshipRequestsCount,
-  } = useQuery(GET_FRIENDSHIP_REQUESTS_COUNT, {
+  const [
+    getUserFriendshipRequestsCount,
+    {
+      loading: friendshipRequestsCountLoading,
+      data: friendshipRequestsCount,
+      error: friendshipRequestsCountErr,
+      refetch: refetchFriendshipRequestsCount,
+    },
+  ] = useLazyQuery(GET_FRIENDSHIP_REQUESTS_COUNT, {
     onCompleted(data) {
       setMainData((prev) => ({
         ...prev,
@@ -145,6 +164,15 @@ const UserNotificationsCountContext = ({
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {}
   };
+
+  useEffect(() => {
+    if (user && !isFetched.current) {
+      getUserNotificationsCount();
+      getUserFriendshipRequestsCount();
+      isFetched.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   return (
     <userNotificationsCountContext.Provider

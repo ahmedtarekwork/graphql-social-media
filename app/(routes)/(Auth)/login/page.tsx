@@ -88,56 +88,6 @@ const LoginPage = () => {
           public_id
           secure_url
         }
-
-        ownedPages {
-          _id
-          name
-          profilePicture {
-            public_id
-            secure_url
-          }
-        }
-        adminPages {
-          _id
-          name
-          profilePicture {
-            public_id
-            secure_url
-          }
-        }
-        followedPages {
-          _id
-          name
-          profilePicture {
-            public_id
-            secure_url
-          }
-        }
-
-        ownedGroups {
-          _id
-          name
-          profilePicture {
-            public_id
-            secure_url
-          }
-        }
-        adminGroups {
-          _id
-          profilePicture {
-            public_id
-            secure_url
-          }
-          name
-        }
-        joinedGroups {
-          _id
-          name
-          profilePicture {
-            public_id
-            secure_url
-          }
-        }
       }
     }
   `;
@@ -154,11 +104,7 @@ const LoginPage = () => {
       setUser(data);
     },
     onError({ graphQLErrors }) {
-      console.log(graphQLErrors);
-
-      if (graphQLErrors.length) {
-        toast.error(graphQLErrors[0].message);
-      }
+      toast.error(graphQLErrors?.[0]?.message || "something went wrong");
     },
   });
 

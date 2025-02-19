@@ -1,6 +1,7 @@
 // react
 import {
   useContext,
+  useEffect,
   useRef,
   useState,
 
@@ -14,6 +15,7 @@ import Link from "next/link";
 
 // contexts
 import { userNotificationsCountContext } from "@/contexts/UserNotificationsCountContext";
+import { authContext } from "@/contexts/AuthContext";
 
 // components
 import Loading from "./Loading";
@@ -32,12 +34,11 @@ import {
 import type { NotificationType } from "@/lib/types";
 
 // gql
-import { gql, useMutation, useQuery } from "@apollo/client";
+import { gql, useLazyQuery, useMutation } from "@apollo/client";
 
 // icons
 import { FaCheckCircle, FaUserFriends } from "react-icons/fa";
 import { MdNotificationsActive } from "react-icons/md";
-import { FaArrowRotateLeft } from "react-icons/fa6";
 
 // utils
 import { toast } from "sonner";
@@ -85,24 +86,22 @@ const MARK_SINGLE_NOTIFICATIONS_AS_READ = gql`
 `;
 
 const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
+  const { user } = useContext(authContext);
   const { refreshCount } = useContext(userNotificationsCountContext);
 
+  const isFetched = useRef(false);
   const pageAndLimit = useRef({
     page: 1,
     limit: 10,
   });
   const [fetchMoreLoading, setFetchMoreLoading] = useState(false);
 
-  const { loading, error, data, fetchMore, updateQuery } = useQuery(
-    GET_USER_NOTIFICATIONS,
-    {
-      variables: { notificationsPagination: pageAndLimit.current },
-
-      onError(error) {
-        console.log(error);
-      },
-    }
-  );
+  const [
+    getUserNotifications,
+    { loading, error, data, fetchMore, updateQuery },
+  ] = useLazyQuery(GET_USER_NOTIFICATIONS, {
+    variables: { notificationsPagination: pageAndLimit.current },
+  });
 
   const [
     markAllNotificationsAsRead,
@@ -140,8 +139,6 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
         const id = data.markNotificationAsRead.id;
         if (id) {
           updateQuery((prev) => {
-            console.log(prev);
-
             return {
               getUserNotifications: {
                 ...prev.getUserNotifications,
@@ -194,6 +191,14 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
     });
   };
 
+  useEffect(() => {
+    if (user && !isFetched.current) {
+      getUserNotifications();
+      isFetched.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   return (
     <DialogContent
       className="overflow-auto"
@@ -234,10 +239,9 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
               component: (
                 <Button
                   className="mx-auto"
-                  onClick={() => window.location.reload()}
+                  onClick={() => setOpenDialog(false)}
                 >
-                  <FaArrowRotateLeft />
-                  refresh page
+                  close
                 </Button>
               ),
             }}
@@ -298,17 +302,13 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
               )}
             </ul>
 
-            {fetchMoreLoading && (
-              <Loading size={16} withText withFullHeight={false} />
-            )}
-
             {!isFinalPage && (
               <Button
-                className="mx-auto block"
-                disabled={loading || fetchMoreLoading}
                 onClick={handleFetchMore}
+                className="w-fit mx-auto mt-4"
+                disabled={fetchMoreLoading || loading}
               >
-                see more
+                {fetchMoreLoading || loading ? "Loading..." : "See more"}
               </Button>
             )}
           </>

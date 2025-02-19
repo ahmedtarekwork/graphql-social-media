@@ -35,6 +35,7 @@ const GET_SINGLE_POST = gql`
       owner {
         profilePicture {
           secure_url
+          public_id
         }
         username
         _id
@@ -102,6 +103,7 @@ const SinglePostPage = () => {
       updateQuery={updateQuery}
       post={data.getSinglePost}
       TagName="div"
+      fetchMethodName="getSinglePost"
     />
   );
 };

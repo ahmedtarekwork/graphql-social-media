@@ -19,10 +19,7 @@ import { authContext } from "@/contexts/AuthContext";
 // components
 import IllustrationPage from "@/components/IllustrationPage";
 import Loading from "@/components/Loading";
-
-import ProfileAndCoverPicture, {
-  type ProfileAndCoverPictureRefType,
-} from "../../../../components/profiles/ProfileAndCoverPicture";
+import ProfileTopInfo from "@/components/profiles/ProfileTopInfo";
 
 import TabsSwitcher, {
   type TabsSwitcherRefType,
@@ -38,12 +35,11 @@ import notFoundSVG from "/public/illustrations/404.svg";
 // graphql
 import { gql, useLazyQuery } from "@apollo/client";
 
-// icons
-import FriendshipBtns from "./components/FriendshipBtns";
-
 // hooks
 import useIsCurrentUserProfile from "@/hooks/useIsCurrentUserProfile";
-import ProfileTopInfo from "@/components/profiles/ProfileTopInfo";
+
+// tpyes
+import { type ProfileAndCoverPictureRefType } from "../../../../components/profiles/ProfileAndCoverPicture";
 
 const putActiveClassOnTab = (e: MouseEvent<HTMLButtonElement>) => {
   e.currentTarget.parentElement?.parentElement
@@ -64,12 +60,6 @@ const GET_SINGLE_USER = gql`
       address
       email
       username
-      followedPages {
-        _id
-      }
-      joinedGroups {
-        _id
-      }
 
       coverPicture {
         secure_url

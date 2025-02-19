@@ -19,11 +19,13 @@ import { toast } from "sonner";
 
 // types
 import { type InsideProfileType } from "../PostCard";
+import { PostType } from "@/lib/types";
 
 type Props = {
   btnVariant: "default" | "ghost";
   postId: string;
   isShared: boolean;
+  fetchMethodName: string;
 } & Pick<InsideProfileType, "mode" | "updateQuery">;
 
 const SHARE_POST = gql`
@@ -40,42 +42,88 @@ const SharePostBtn = ({
   isShared,
   mode,
   updateQuery,
+  fetchMethodName,
 }: Props) => {
   const { setData } = useContext(PostsContext);
 
   const [sharePost, { loading }] = useMutation(SHARE_POST, {
     variables: { postId },
     onCompleted(data) {
-      if (mode === "profilePage") {
-        setData((prev) => {
-          return {
-            ...prev,
-            posts: prev.posts.map((post) => {
-              if (post._id.toString() === postId) {
-                return {
-                  ...post,
-                  isShared: !isShared,
-                  shareData: {
-                    ...post.shareData,
-                    count: post.shareData.count + (isShared ? -1 : 1),
-                  },
-                };
-              }
+      switch (mode) {
+        case "singlePageInfoPage":
+        case "profilePage": {
+          setData((prev) => {
+            return {
+              ...prev,
+              posts: prev.posts.map((post) => {
+                if (post._id.toString() === postId) {
+                  return {
+                    ...post,
+                    isShared: !isShared,
+                    shareData: {
+                      ...post.shareData,
+                      count: post.shareData.count + (isShared ? -1 : 1),
+                    },
+                  };
+                }
 
-              return post;
-            }),
-          };
-        });
-      }
-      if (mode === "single") {
-        updateQuery?.((prev: any) => {
-          return {
-            getSinglePost: {
-              ...prev.getSinglePost,
-              isShared: !!prev.getSinglePost.isShared,
-            },
-          };
-        });
+                return post;
+              }),
+            };
+          });
+
+          break;
+        }
+
+        case "homePage": {
+          updateQuery?.((prev) => {
+            return {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ...(prev as any),
+
+              [fetchMethodName]: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ...(prev as any)?.[fetchMethodName],
+                posts:
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  ((prev as any)?.[fetchMethodName]?.posts || []).posts.map(
+                    (post: PostType) => {
+                      if (post._id === postId) {
+                        return {
+                          ...post,
+                          isShared: !isShared,
+                          shareData: {
+                            ...post.shareData,
+                            count: post.shareData.count + (isShared ? -1 : 1),
+                          },
+                        };
+                      }
+
+                      return post;
+                    }
+                  ),
+              },
+            };
+          });
+        }
+
+        case "single": {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          updateQuery?.((prev: any) => {
+            return {
+              [fetchMethodName]: {
+                ...prev[fetchMethodName],
+                isShared: !isShared,
+                shareData: {
+                  ...prev[fetchMethodName]?.shareData,
+                  count:
+                    prev[fetchMethodName]?.shareData.count +
+                    (isShared ? -1 : 1),
+                },
+              },
+            };
+          });
+        }
       }
 
       toast.success(

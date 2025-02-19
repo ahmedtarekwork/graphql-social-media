@@ -45,6 +45,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
           username
           profilePicture {
             secure_url
+            public_id
           }
         }
       }
@@ -80,28 +81,6 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
 
   const isFinalPage = data?.[queryName]?.isFinalPage;
 
-  useEffect(() => {
-    if (!initFetch && activeReaction === reaction) getReactionUsers();
-  }, [activeReaction]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const documentHeight = document.documentElement.scrollHeight;
-      const scrollPosition = window.scrollY + window.innerHeight;
-
-      const isBottom = scrollPosition >= documentHeight - 150;
-
-      if (isBottom) handleFetchMore();
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const handleFetchMore = () => {
     if (fetchMoreLoading || loading || isFinalPage || error) return;
 
@@ -127,6 +106,28 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
       },
     });
   };
+
+  useEffect(() => {
+    if (!initFetch && activeReaction === reaction) getReactionUsers();
+  }, [activeReaction]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollPosition = window.scrollY + window.innerHeight;
+
+      const isBottom = scrollPosition >= documentHeight - 150;
+
+      if (isBottom) handleFetchMore();
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (activeReaction !== reaction) return;
   if (loading) return <Loading />;

@@ -111,6 +111,7 @@ const SettingSlice = ({
               return {
                 ...prev!,
                 getPageInfo: {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   ...(prev as any)!.getPageInfo,
                   [settingName]: newValues[settingName],
                 },
@@ -130,12 +131,12 @@ const SettingSlice = ({
         { duration: 9000 }
       );
     },
-    onError(error) {
-      console.log(error);
+    onError({ graphQLErrors }) {
       toast.error(
-        `something went wrong while updating ${
-          profileType === "personal" ? "your " : ""
-        }${settingName}`,
+        graphQLErrors?.[0]?.message ||
+          `something went wrong while updating ${
+            profileType === "personal" ? "your " : ""
+          }${settingName}`,
         {
           duration: 9000,
         }
@@ -144,7 +145,7 @@ const SettingSlice = ({
   });
 
   return (
-    <div className="flex flex-wrap justify-between gap-1.5 items-center bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2">
+    <div className="flex flex-wrap justify-between gap-1.5 items-center bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2 text-left">
       <div>
         <p>
           change {profileType === "personal" ? "your " : ""}

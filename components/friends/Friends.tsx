@@ -8,11 +8,11 @@ import { useRef, useState } from "react";
 import { gql, useQuery } from "@apollo/client";
 
 // components
-import Loading from "./Loading";
-import IllustrationPage from "./IllustrationPage";
-import UserCard from "./UserCard";
+import Loading from "../Loading";
+import IllustrationPage from "../IllustrationPage";
+import UserCard from "../UserCard";
 // shadcn
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 // icons
 import { FaExternalLinkAlt } from "react-icons/fa";
@@ -38,6 +38,7 @@ const GET_USER_FRIENDS = gql`
         username
         profilePicture {
           secure_url
+          public_id
         }
       }
       isFinalPage
@@ -59,6 +60,7 @@ const Friends = ({ userId, mode }: Props) => {
   });
 
   const friends: NotFullUserType[] = data?.getUserFriends?.friends || [];
+  const isFinalPage = data?.getUserFriends?.isFinalPage;
 
   if (loading && !friends.length) return <Loading />;
 
@@ -110,6 +112,8 @@ const Friends = ({ userId, mode }: Props) => {
   }
 
   const handleFetchMoreFriends = () => {
+    if (isFinalPage || fetchMoreLoading || error || loading) return;
+
     pageAndLimit.current.page += 1;
 
     setFetchMoreLoading(true);
@@ -150,19 +154,19 @@ const Friends = ({ userId, mode }: Props) => {
           <UserCard
             user={user}
             key={user._id}
-            btnsType="VIEW_PROFILE"
+            btnType="VIEW_PROFILE"
             cardMode={mode}
           />
         ))}
       </ul>
 
-      {!data?.getUserFriends?.isFinalPage && (
+      {!isFinalPage && (
         <Button
           onClick={handleFetchMoreFriends}
-          className="mt-2 w-fit mx-auto"
-          disabled={loading}
+          className="w-fit mx-auto mt-4"
+          disabled={fetchMoreLoading || loading}
         >
-          See more
+          {fetchMoreLoading || loading ? "Loading..." : "See more"}
         </Button>
       )}
 

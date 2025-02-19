@@ -68,6 +68,7 @@ const postResolvers = {
                   {
                     owner: { $in: user.friendsList },
                     privacy: { $in: ["public", "friends_only"] },
+                    community: "personal",
                   },
                 ],
               },
@@ -91,6 +92,36 @@ const postResolvers = {
                     },
                   },
                   { $unwind: "$postOwner" },
+
+                  {
+                    $lookup: {
+                      from: "pages",
+                      localField: "communityId",
+                      foreignField: "_id",
+                      as: "pageCommunity",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$pageCommunity",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
+
+                  {
+                    $lookup: {
+                      from: "group",
+                      localField: "communityId",
+                      foreignField: "_id",
+                      as: "groupCommunity",
+                    },
+                  },
+                  {
+                    $unwind: {
+                      path: "$groupCommunity",
+                      preserveNullAndEmptyArrays: true,
+                    },
+                  },
 
                   {
                     $lookup: {
@@ -161,6 +192,16 @@ const postResolvers = {
                       shareDate: "$createdAt",
                       isInBookMark: 1,
                       isShared: 1,
+                      pageCommunity: {
+                        _id: "$pageCommunity._id",
+                        name: "$pageCommunity.name",
+                        profilePicture: "$pageCommunity.profilePicture",
+                      },
+                      groupCommunity: {
+                        _id: "$groupCommunity._id",
+                        name: "$groupCommunity.name",
+                        profilePicture: "$groupCommunity.profilePicture",
+                      },
                     },
                   },
                 ],
@@ -178,7 +219,33 @@ const postResolvers = {
 
           return {
             isFinalPage: page * limit >= count || 0,
-            posts: posts?.[0]?.posts || [],
+            posts: (posts?.[0]?.posts || []).map(
+              (post: PostType & Record<string, unknown>) => {
+                const communityInfo = {} as Record<string, unknown>;
+
+                let data: any;
+                if (post.community === "page") data = post.pageCommunity;
+                else if (post.community === "group") data = post.groupCommunity;
+
+                if (data) {
+                  communityInfo.communityInfo = {
+                    _id: data._id,
+                    name: data.name,
+                    profilePicture: data.profilePicture,
+                  };
+                }
+
+                return {
+                  ...Object.fromEntries(
+                    Object.entries(post).filter(
+                      ([key]) =>
+                        !["pageCommunity", "groupCommunity"].includes(key)
+                    )
+                  ),
+                  ...communityInfo,
+                };
+              }
+            ),
           };
         },
       }),
@@ -614,10 +681,16 @@ const postResolvers = {
         publicErrorMsg: "something went wrong while getting the post",
         async resolveCallback(user) {
           const post = (await Post.findById(postId)
-            .populate({
-              path: "owner",
-              select: "username _id profilePicture",
-            })
+            .populate([
+              {
+                path: "owner",
+                select: "username _id profilePicture",
+              },
+              {
+                path: "communityId",
+                select: "profilePicture name _id owner",
+              },
+            ])
             .lean()
             .select({
               "shareData.count": 1,
@@ -631,6 +704,7 @@ const postResolvers = {
               media: 1,
               privacy: 1,
               community: 1,
+              communityId: 1,
               createdAt: 1,
             })) as PostType;
 
@@ -714,6 +788,8 @@ const postResolvers = {
             isShared: !!result?.[0]?.isShared?.[0]?.isShared,
             isInBookMark: !!result?.[0]?.isInBookMark?.[0]?.isInBookMark,
             shareDate: (post as unknown as { createdAt: string }).createdAt,
+            communityInfo: post.communityId,
+            communityId: (post.communityId as any)?._id,
           };
         },
       }),
@@ -878,8 +954,6 @@ const postResolvers = {
 
           const reactions = result?.[0]?.reactions?.[0]?.reactions || [];
 
-          console.log("_REACTIONS_", reactions);
-
           const reactionsCount =
             result?.[0]?.reactionsCount?.[0]?.reactionsCount || 0;
 
@@ -1040,31 +1114,31 @@ const postResolvers = {
         publicErrorMsg: "something went wrong while add the post",
         async resolveCallback(user) {
           switch (postData.community) {
-            case "group": {
-              if (!(await Group.exists({ _id: postData.communityId }))) {
-                throw new GraphQLError("group with given id not found", {
-                  extensions: { code: "NOT_FOUND" },
-                });
-              }
+            // case "group": {
+            //   if (!(await Group.exists({ _id: postData.communityId }))) {
+            //     throw new GraphQLError("group with given id not found", {
+            //       extensions: { code: "NOT_FOUND" },
+            //     });
+            //   }
 
-              const isMemberOrOwner = (
-                [
-                  user.joinedGroups,
-                  user.ownedGroups,
-                ] as unknown as (typeof Types.ObjectId)[]
-              ).some((id) => id.toString() === postData.communityId);
+            //   const isMemberOrOwner = (
+            //     [
+            //       user.joinedGroups,
+            //       user.ownedGroups,
+            //     ] as unknown as (typeof Types.ObjectId)[]
+            //   ).some((id) => id.toString() === postData.communityId);
 
-              if (!isMemberOrOwner) {
-                throw new GraphQLError(
-                  "you must be a member in the group to post in it",
-                  { extensions: { code: "FORBIDDEN" } }
-                );
-              }
-            }
+            //   if (!isMemberOrOwner) {
+            //     throw new GraphQLError(
+            //       "you must be a member in the group to post in it",
+            //       { extensions: { code: "FORBIDDEN" } }
+            //     );
+            //   }
+            // }
 
             case "page": {
               const page = (
-                await Page.findById(postData.communityId).select("owner admins")
+                await Page.findById(postData.communityId).select("owner")
               )?._doc;
 
               if (!page) {
@@ -1073,14 +1147,32 @@ const postResolvers = {
                 });
               }
 
-              const notAdmin = ![page.owner, ...page.admins].some(
-                (id) => id.toString() === user._id
-              );
+              const isUserAdminInPage = (
+                await Page.aggregate([
+                  {
+                    $match: { _id: new Types.ObjectId(postData.communityId) },
+                  },
+                  {
+                    $project: {
+                      isUserAdminInPage: {
+                        $in: [new Types.ObjectId(user._id), "$admins"],
+                      },
+                    },
+                  },
+                  { $match: { isUserAdminInPage: true } },
+                ])
+              )?.[0]?.isUserAdminInPage;
 
-              if (notAdmin) {
-                throw new GraphQLError("you can't post on this page", {
-                  extensions: { code: "FORBIDDEN" },
-                });
+              if (
+                !isUserAdminInPage &&
+                page.owner.toString() !== user._id.toString()
+              ) {
+                throw new GraphQLError(
+                  "page owner or admins can only post on this page",
+                  {
+                    extensions: { code: "FORBIDDEN" },
+                  }
+                );
               }
             }
           }
@@ -1179,7 +1271,12 @@ const postResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while edit the post",
         async resolveCallback(user) {
-          const oldPost = (await Post.findById(postId))._doc;
+          const oldPost = (
+            await Post.findById(postId).populate({
+              path: "communityId",
+              select: "_id owner",
+            })
+          )._doc;
 
           if (!oldPost) {
             throw new GraphQLError("post with given id not found", {
@@ -1187,36 +1284,55 @@ const postResolvers = {
             });
           }
 
-          if (user._id.toString() !== oldPost.owner.toString()) {
+          if (
+            oldPost.community === "personal" &&
+            user._id.toString() !== oldPost.owner.toString()
+          ) {
             throw new GraphQLError("post owner only can modify the post", {
               extensions: { code: "FORBIDDEN" },
             });
           }
 
-          // if (oldPost.community === "page") {
-          //   const pageData = oldPost.communityId?._doc;
+          if (oldPost.community !== "personal") {
+            const communityData = oldPost.communityId?._doc;
 
-          //   if (!pageData) {
-          //     throw new GraphQLError("page info not found", {
-          //       extensions: {
-          //         code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
-          //       },
-          //     });
-          //   }
+            if (!communityData) {
+              throw new GraphQLError("page info not found", {
+                extensions: {
+                  code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
+                },
+              });
+            }
 
-          //   const hasAccess = [pageData.owner, ...pageData.admins].some(
-          //     (id) => id.toString() === user._id
-          //   );
+            const isUserAdminInCommunity = (
+              await (oldPost.community === "page" ? Page : Group).aggregate([
+                {
+                  $match: { _id: new Types.ObjectId(communityData._id || "") },
+                },
+                {
+                  $project: {
+                    isUserAdminInCommunity: {
+                      $in: [new Types.ObjectId(user._id), "$admins"],
+                    },
+                  },
+                },
+                { $match: { isUserAdminInCommunity: true } },
+              ])
+            )?.[0]?.isUserAdminInCommunity;
 
-          //   if (!hasAccess) {
-          //     throw new GraphQLError(
-          //       "you don't have access to edit posts in this page",
-          //       {
-          //         extensions: { code: "FORBIDDEN" },
-          //       }
-          //     );
-          //   }
-          // }
+            const hasAccess =
+              user._id !== communityData.owner.toString() ||
+              !isUserAdminInCommunity;
+
+            if (!hasAccess) {
+              throw new GraphQLError(
+                `you don't have access to edit posts in this ${oldPost.community}`,
+                {
+                  extensions: { code: "FORBIDDEN" },
+                }
+              );
+            }
+          }
 
           const newDataKeys = Object.keys(postData).filter(
             (key) => key !== "media"
@@ -1234,8 +1350,6 @@ const postResolvers = {
               );
             }
           }
-
-          // { _id: postId, owner: user._id },
 
           const pushNewMedia: { $push?: { media: ImageType[] } } = {};
 
@@ -1278,7 +1392,12 @@ const postResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while deleting the post",
         async resolveCallback(user) {
-          const post = (await Post.findById(postId))?._doc;
+          const post = (
+            await Post.findById(postId).populate({
+              path: "communityId",
+              select: "_id owner",
+            })
+          )?._doc;
 
           if (!post) {
             throw new GraphQLError("post with given id not found", {
@@ -1286,59 +1405,51 @@ const postResolvers = {
             });
           }
 
-          if (post.owner.toString() !== user._id) {
-            switch (post.community) {
-              case "group": {
-                const group = (await Group.findById(post.communityId))?._doc;
+          let hasAccess = false;
 
-                if (!group) {
-                  throw new GraphQLError("group not found", {
-                    extensions: { code: "FORBIDDEN" },
-                  });
-                }
+          switch (post.community) {
+            case "personal": {
+              hasAccess = post.owner.toString() === user._id;
+            }
 
-                const hasAccess = [...group.admins, group.owner].some(
-                  (id: typeof Types.ObjectId) => id.toString() === user._id
-                );
+            default: {
+              const isUserAdminInCommunity = (
+                await Page.aggregate([
+                  { $match: { _id: new Types.ObjectId(post.communityId._id) } },
 
-                if (!hasAccess) {
-                  throw new GraphQLError(
-                    "post owner or admins can only delete this post",
-                    {
-                      extensions: { code: "FORBIDDEN" },
-                    }
-                  );
-                }
-              }
+                  {
+                    $project: {
+                      isUserAdminInCommunity: {
+                        $in: [new Types.ObjectId(user._id), "$admins"],
+                      },
+                    },
+                  },
+                  { $match: { isUserAdminInCommunity: true } },
+                ])
+              )?.[0]?.isUserAdminInCommunity;
 
-              case "page": {
-                const page = (await Page.findById(post.communityId))?._doc;
-
-                if (!page) {
-                  throw new GraphQLError("page not found", {
-                    extensions: { code: "NOT_FOUND" },
-                  });
-                }
-
-                if (page.owner.toString() !== user._id) {
-                  throw new GraphQLError(
-                    "post owner or page owner can only delete post",
-                    {
-                      extensions: { code: "FORBIDDEN" },
-                    }
-                  );
-                }
-              }
-
-              default: {
-                throw new GraphQLError("you can't delete other users post", {
-                  extensions: { code: "FORBIDDEN" },
-                });
-              }
+              hasAccess =
+                isUserAdminInCommunity ||
+                post.communityId.owner.toString() === user._id.toString();
             }
           }
 
-          await Post.deleteOne({ _id: postId, owner: user._id });
+          if (!hasAccess) {
+            throw new GraphQLError(
+              `${
+                post.community === "personal" ? "post" : post.community
+              } owner or admins can only delete this post`,
+              {
+                extensions: { code: "FORBIDDEN" },
+              }
+            );
+          }
+
+          await Post.deleteOne({ _id: postId });
+
+          const commentsMedia = await Comment.find({ post: postId }).select(
+            "media"
+          );
 
           const deleteCommentsPromise = Comment.deleteMany({ post: postId });
 
@@ -1361,7 +1472,15 @@ const postResolvers = {
           await Promise.allSettled([
             deleteFromUsersSavedPostsAndSharedPostsAndPostOwnerPosts,
             deleteCommentsPromise,
-            deleteMedia(post.media.map((media: ImageType) => media.public_id)),
+            deleteMedia([
+              ...post.media.map((media: ImageType) => media.public_id),
+              ...commentsMedia
+                .map((comment) => comment.media)
+                .map((mediaArr: ImageType[]) =>
+                  mediaArr.map((media) => media.public_id)
+                )
+                .flat(Infinity),
+            ]),
           ]);
 
           return { message: "post deleted successfully" };
