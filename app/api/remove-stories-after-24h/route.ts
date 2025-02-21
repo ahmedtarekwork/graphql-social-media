@@ -36,6 +36,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.log("cron job error:", error);
 
-    return Response.json({ success: false }, { status: 500 });
+    return Response.json({ cronJobSuccess: false }, { status: 500 });
   }
 }

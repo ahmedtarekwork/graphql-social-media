@@ -20,16 +20,16 @@ import { gql, useQuery } from "@apollo/client";
 import { Button } from "@/components/ui/button";
 // components
 import Loading from "@/components/Loading";
-import CommunityCard from "@/components/CommunityCard";
+import CommunityCard from "@/components/communities/CommunityCard";
 
 import IllustrationPage, {
   type IllustrationPageBtnType,
 } from "@/components/IllustrationPage";
 
 // types
-import { type PagesType } from "../page";
+import { type CommunitiesType } from "../../app/(routes)/pages/page";
 import type { StaticImport } from "next/dist/shared/lib/get-img-props";
-import type { PageType } from "@/lib/types";
+import type { GroupType, PageType } from "@/lib/types";
 
 // SVGs
 import errorLaptopSVG from "/public/illustrations/error-laptop.svg";
@@ -42,27 +42,33 @@ import exploreSVG from "/public/illustrations/plane.svg";
 import { MdExplore, MdFiberNew } from "react-icons/md";
 
 type Props = {
-  pagesType: PagesType;
-  setPagesType: Dispatch<SetStateAction<PagesType>>;
+  CommunitiesType: CommunitiesType;
+  setCommunitiesType: Dispatch<SetStateAction<CommunitiesType>>;
+  mode: "page" | "group";
 };
 
-const DisplayPages = ({ pagesType, setPagesType }: Props) => {
-  const queryName = `get${pagesType[0].toUpperCase()}${pagesType.slice(
+const DisplayCommunities = ({
+  CommunitiesType,
+  setCommunitiesType,
+  mode,
+}: Props) => {
+  const pluralCommunityName = `${mode}s`;
+  const queryName = `get${CommunitiesType[0].toUpperCase()}${CommunitiesType.slice(
     1
-  )}Pages`;
+  )}${pluralCommunityName[0].toUpperCase()}${pluralCommunityName.slice(1)}`;
 
-  const GET_PAGES = gql`
+  const GET_COMMUNITIES = gql`
     query ${queryName}($pagination: PaginatedItemsInput!) {
       ${queryName}(pagination : $pagination) {
         isFinalPage
-        pages {
+        ${mode}s {
           _id
           name
           profilePicture {
             secure_url
             public_id
           }
-          followersCount
+          ${mode === "page" ? "followersCount" : "membersCount"}
         }
       }
     }
@@ -72,11 +78,14 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
 
   const [fetchMoreLoading, setFetchMoreLoading] = useState(false);
 
-  const { data, loading, error, fetchMore } = useQuery(GET_PAGES, {
+  const { data, loading, error, fetchMore } = useQuery(GET_COMMUNITIES, {
     variables: { pagination: pageAndLimit.current },
   });
 
-  const pages = (data?.[queryName]?.pages || []) as PageType[];
+  const communities = (data?.[queryName]?.[pluralCommunityName] || []) as (
+    | PageType
+    | GroupType
+  )[];
   const isFinalPage = !!data?.[queryName]?.isFinalPage;
 
   const handleFetchMore = () => {
@@ -96,7 +105,10 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
 
         return {
           [queryName]: {
-            pages: [...pages, ...(fetchMoreResult?.[queryName]?.pages || [])],
+            [pluralCommunityName]: [
+              ...communities,
+              ...(fetchMoreResult?.[queryName]?.[pluralCommunityName] || []),
+            ],
             isFinalPage: !!fetchMoreResult?.[queryName]?.isFinalPage,
           },
         };
@@ -124,40 +136,40 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
 
   if (loading) return <Loading />;
 
-  if (error && !loading && !pages.length) {
+  if (error && !loading && !communities.length) {
     return (
       <IllustrationPage
         content={`cant get ${
-          pagesType === "explore" ? "" : `${pagesType} `
-        }pages at the momment`}
+          CommunitiesType === "explore" ? "" : `${CommunitiesType} `
+        }${pluralCommunityName} at the momment`}
         svg={errorLaptopSVG}
         btn={{ type: "go-to-home" }}
       />
     );
   }
 
-  if (!error && !loading && !pages.length) {
+  if (!error && !loading && !communities.length) {
     let message: ReactNode;
     let SVG: StaticImport;
     let btn: IllustrationPageBtnType;
 
-    switch (pagesType) {
+    switch (CommunitiesType) {
       case "admin": {
-        message = "you are not admin in any pages";
+        message = `you are not admin in any ${pluralCommunityName}`;
         SVG = adminSVG;
         btn = { type: "go-to-home" };
         break;
       }
       case "owned": {
-        message = "you are not owner of any pages";
+        message = `you are not owner of any ${pluralCommunityName}`;
         SVG = ownedSVG;
         btn = {
           type: "custom",
           component: (
             <Button asChild>
-              <Link href="/pages/new">
+              <Link href={`/${pluralCommunityName}/new`}>
                 <MdFiberNew />
-                create a page
+                create a {mode}
               </Link>
             </Button>
           ),
@@ -165,21 +177,23 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
         break;
       }
       case "followed": {
-        message = "you don't follow any pages";
+        message = `you don't ${
+          mode === "page" ? "follow" : "joined"
+        } any ${pluralCommunityName}`;
         SVG = followSVG;
         btn = {
           type: "custom",
           component: (
-            <Button onClick={() => setPagesType("explore")}>
+            <Button onClick={() => setCommunitiesType("explore")}>
               <MdExplore />
-              explore pages
+              explore {pluralCommunityName}
             </Button>
           ),
         };
         break;
       }
       case "explore": {
-        message = "there aren't any pages to explore at the momment";
+        message = `there aren't any ${pluralCommunityName} to explore at the momment`;
         SVG = exploreSVG;
         btn = { type: "go-to-home" };
         break;
@@ -197,8 +211,8 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 0.9fr))",
         }}
       >
-        {pages.map((page) => (
-          <CommunityCard key={page._id} community={page} type="page" />
+        {communities.map((page) => (
+          <CommunityCard key={page._id} community={page} type={mode} />
         ))}
       </ul>
 
@@ -217,4 +231,4 @@ const DisplayPages = ({ pagesType, setPagesType }: Props) => {
     </>
   );
 };
-export default DisplayPages;
+export default DisplayCommunities;

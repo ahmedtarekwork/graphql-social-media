@@ -2,16 +2,32 @@ import gql from "graphql-tag";
 
 const groupTypeDefs = gql`
   type Query {
-    getGroups(wantedGroups: PaginatedItemsInput!): [Group!]!
     getSingleGroup(groupId: ID!): Group
+
+    getExploreGroups(pagination: PaginatedItemsInput!): GetGroupsResponse!
+    getJoinedGroups(pagination: PaginatedItemsInput!): GetGroupsResponse!
+    getAdminGroups(pagination: PaginatedItemsInput!): GetGroupsResponse!
+    getOwnedGroups(pagination: PaginatedItemsInput!): GetGroupsResponse!
+
     getGroupJoinRequests(
       requestsPaginationInfo: GetGroupRequestsInput!
-    ): [GroupRequest!]!
+    ): GetJoinRequestsResponse!
+
+    getGroupPosts(
+      paginatedPosts: PaginationWithSkipAndGroupId!
+    ): GetGroupPostsResponse!
+
+    getGroupAdminsList(
+      paginationData: PaginationWithSkipAndGroupId!
+    ): GetGroupAdminsReponse!
+
+    isUserMemberInGroup(groupId: ID!): IsUserMemberInGroupResponse!
+    isUserAdminInGroup(groupId: ID!): IsUserAdminInGroupResponse!
   }
 
   type Mutation {
-    addGroup(addGroupData: AddGroupInput!): Group!
-    editGroup(editGroupData: EditGroupInput!): Group!
+    addGroup(groupData: AddGroupInput!): Group!
+    editGroup(editGroupData: EditGroupInput!): SuccessResponseType!
     deleteGroup(groupId: ID!): SuccessResponseType!
 
     toggleGroupAdmin(
@@ -22,7 +38,7 @@ const groupTypeDefs = gql`
     exitGroup(groupId: ID!): SuccessResponseType!
 
     expulsingFromTheGroup(
-      expulsingFromGroupData: ExpulsingFromTheGroupInput
+      expulsingFromGroupData: ExpulsingFromTheGroupInput!
     ): SuccessResponseType!
 
     handleGroupRequest(
@@ -41,9 +57,42 @@ const groupTypeDefs = gql`
     admins: [User!]!
   }
 
+  type IsUserAdminInGroupResponse {
+    isUserAdminInGroup: Boolean!
+  }
+  type IsUserMemberInGroupResponse {
+    isUserMemberInGroup: Boolean!
+  }
+
+  type GetGroupPostsResponse {
+    posts: [Post!]!
+    isFinalPage: Int!
+  }
+
+  type GetGroupAdminsReponse {
+    admins: [NotFullUser!]!
+    isFinalPage: Int!
+  }
+
+  input PaginationWithSkipAndGroupId {
+    limit: Int!
+    page: Int!
+    skip: Int!
+    groupId: String!
+  }
+
+  type GetJoinRequestsResponse {
+    requests: [GroupRequest!]!
+    isFinalPage: Boolean!
+  }
+
+  type GetGroupsResponse {
+    groups: [Group!]!
+    isFinalPage: Boolean!
+  }
+
   type JoinGroupResponseType {
     message: String!
-    joinedGroups: [ID!]
   }
 
   enum GroupPrivacy {
@@ -60,12 +109,14 @@ const groupTypeDefs = gql`
     name: String!
     profilePicture: ImageInput
     coverPicture: ImageInput
+    privacy: GroupPrivacy
   }
   input EditGroupInput {
     groupId: ID!
     name: String
     profilePicture: ImageInput
     coverPicture: ImageInput
+    privacy: GroupPrivacy
   }
 
   input ToggleGroupAdminInput {
@@ -77,7 +128,6 @@ const groupTypeDefs = gql`
   type GroupRequest {
     _id: ID! # ID of request itself
     user: User!
-    group: Group!
   }
 
   input HandleGroupRequestInput {

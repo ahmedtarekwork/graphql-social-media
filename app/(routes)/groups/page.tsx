@@ -1,4 +1,7 @@
-const GroupPage = () => {
-  return <div>GroupPage</div>;
+// components
+import RenderCommunitiesPage from "@/components/communities/RenderCommunitiesPage";
+
+const AllGroupsPage = () => {
+  return <RenderCommunitiesPage type="group" />;
 };
-export default GroupPage;
+export default AllGroupsPage;

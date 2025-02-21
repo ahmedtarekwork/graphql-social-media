@@ -15,8 +15,8 @@ import UserNotificationsCountContext from "@/contexts/UserNotificationsCountCont
 import { Toaster } from "sonner";
 
 // components
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import Sidebar from "@/components/sidebar/Sidebar";
 // shadcn
 import { SidebarProvider } from "@/components/ui/sidebar";

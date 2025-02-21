@@ -33,10 +33,7 @@ const pageResolvers = {
       return await handleConnectDB({
         publicErrorMsg: "can't get page info at the momment",
         async resolveCallback() {
-          const page = await Page.findById(pageId).populate({
-            path: "owner",
-            select: "_id",
-          });
+          const page = (await Page.findById(pageId))?._doc;
 
           if (!page) {
             throw new GraphQLError("page with given id not found", {
@@ -44,7 +41,7 @@ const pageResolvers = {
             });
           }
 
-          return page;
+          return { ...page, owner: { _id: page.owner } };
         },
       });
     },
@@ -121,8 +118,8 @@ const pageResolvers = {
             },
           ]);
 
-          const pages = pagesResult?.[0]?.pages;
-          const count = pagesResult?.[0]?.metadata?.[0]?.total;
+          const pages = pagesResult?.[0]?.pages || [];
+          const count = pagesResult?.[0]?.metadata?.[0]?.total || 0;
 
           return { pages, isFinalPage: page * limit >= count };
         },
@@ -148,7 +145,7 @@ const pageResolvers = {
                 pagesCount: [
                   {
                     $project: {
-                      friendsCount: {
+                      pagesCount: {
                         $size: { $ifNull: ["$followedPages", []] },
                       },
                     },
@@ -195,7 +192,8 @@ const pageResolvers = {
 
           return {
             pages: result?.[0]?.pages?.[0]?.pages?.[0] || [],
-            isFinalPage: result?.[0]?.pagesCount?.[0]?.pagesCount || true,
+            isFinalPage:
+              page * limit >= result?.[0]?.pagesCount?.[0]?.pagesCount || 0,
           };
         },
       }),
@@ -217,7 +215,7 @@ const pageResolvers = {
                 pagesCount: [
                   {
                     $project: {
-                      friendsCount: {
+                      pagesCount: {
                         $size: { $ifNull: ["$adminPages", []] },
                       },
                     },
@@ -264,7 +262,8 @@ const pageResolvers = {
 
           return {
             pages: result?.[0]?.pages?.[0]?.pages?.[0] || [],
-            isFinalPage: result?.[0]?.pagesCount?.[0]?.pagesCount || true,
+            isFinalPage:
+              page * limit >= result?.[0]?.pagesCount?.[0]?.pagesCount || 0,
           };
         },
       }),
@@ -286,7 +285,7 @@ const pageResolvers = {
                 pagesCount: [
                   {
                     $project: {
-                      friendsCount: {
+                      pagesCount: {
                         $size: { $ifNull: ["$ownedPages", []] },
                       },
                     },
@@ -333,7 +332,8 @@ const pageResolvers = {
 
           return {
             pages: result?.[0]?.pages?.[0]?.pages?.[0] || [],
-            isFinalPage: result?.[0]?.pagesCount?.[0]?.pagesCount || true,
+            isFinalPage:
+              page * limit >= result?.[0]?.pagesCount?.[0]?.pagesCount || 0,
           };
         },
       }),
@@ -347,7 +347,7 @@ const pageResolvers = {
     ) =>
       await handleConnectDB({
         req,
-        publicErrorMsg: "something went wrong while getting page",
+        publicErrorMsg: "something went wrong while getting page posts",
         async resolveCallback(user) {
           const mainSkip = (page - 1) * limit;
 

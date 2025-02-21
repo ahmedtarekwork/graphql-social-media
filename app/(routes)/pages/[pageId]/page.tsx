@@ -117,7 +117,7 @@ const SinglePagePage = () => {
         profileType="page"
         coverPictureRef={coverPictureRef}
         profilePictureRef={profilePictureRef}
-        pageInfo={pageInfo}
+        profileInfo={pageInfo}
         isUserAdminUpdateQuery={isUserAdminUpdateQuery}
         normalUser={normalUser}
         isUserOwner={isUserOwner}

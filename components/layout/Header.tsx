@@ -13,11 +13,11 @@ import { authContext } from "@/contexts/AuthContext";
 import { userNotificationsCountContext } from "@/contexts/UserNotificationsCountContext";
 
 // components
-import SidebarTrigger from "./sidebar/SidebarTrigger";
-import NotificationsDialogContent from "./NotificationsDialogContent";
-import Loading from "./Loading";
+import SidebarTrigger from "../sidebar/SidebarTrigger";
+import NotificationsDialogContent from "../NotificationsDialogContent";
+import Loading from "../Loading";
 // shadcn
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { Dialog } from "@/components/ui/dialog";
 
 // icons

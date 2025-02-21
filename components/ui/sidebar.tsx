@@ -186,16 +186,16 @@ const Sidebar = React.forwardRef<
     const sidebarRef = React.useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
-    const insideFlow =
-      !isMobile &&
-      props.id?.includes("pages-sidebar") &&
-      ["/pages"].includes(pathname);
+    // const insideFlow =
+    //   props.id?.includes("communities-sidebar") &&
+    //   ["/pages", "/groups"].includes(pathname);
 
     React.useEffect(() => {
       const header = document.getElementById("app-header");
       const sidebar = sidebarRef.current;
 
-      if (sidebar && props.id?.includes("nav-sidebar") && header) {
+      // && props.id?.includes("nav-sidebar")
+      if (sidebar && header) {
         const watcher = new ResizeObserver(() => {
           sidebar.style.cssText = `height: calc(100% - ${header.offsetHeight}px); top: ${header.offsetHeight}px`;
         });
@@ -250,7 +250,8 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className={cn(
           "group peer hidden md:block",
-          insideFlow ? "relative" : "fixed z-[1000]"
+          "fixed z-[1000]"
+          // insideFlow ? "relative" : "fixed z-[1000]"
         )}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
@@ -270,7 +271,8 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            insideFlow ? "absolute inset-0" : "fixed top-0 z-10",
+            "fixed top-0 z-10",
+            // insideFlow ? "absolute inset-0" : "fixed top-0 z-10",
             `duration-200 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex`,
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"

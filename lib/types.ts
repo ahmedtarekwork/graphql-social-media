@@ -11,6 +11,13 @@ export type NotFullUserType = Pick<UserType, "_id" | "username"> & {
   profilePicture: Pick<ImageType, "secure_url"> | null;
 };
 
+export type CommunitiesType = "owned" | "admin" | "followed" | "explore";
+
+export type GroupInputDataType = Pick<
+  GroupType,
+  "name" | "privacy" | "profilePicture" | "coverPicture"
+>;
+
 export type NotFullCommunity = NotFullPageOrPost &
   Partial<Pick<GroupType, "membersCount">> &
   Partial<Pick<PageType, "followersCount">>;

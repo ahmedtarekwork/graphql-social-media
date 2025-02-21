@@ -5,7 +5,6 @@ const groupSchema = new Schema(
     name: {
       type: String,
       required: [true, "group name is required"],
-      unique: [true, "this name is already taken"],
     },
     owner: { type: Types.ObjectId, ref: "User" },
     admins: [{ type: Types.ObjectId, ref: "User" }],
@@ -37,7 +36,6 @@ const groupSchema = new Schema(
       type: [
         {
           user: { type: Types.ObjectId, ref: "User" },
-          group: { type: Types.ObjectId, ref: "Group" },
         },
       ],
       default: [],

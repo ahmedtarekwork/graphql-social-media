@@ -42,6 +42,8 @@ import {
 import { BsPersonPlusFill } from "react-icons/bs";
 import { IoMdPerson } from "react-icons/io";
 import { TbFlagPlus } from "react-icons/tb";
+import { TiGroup } from "react-icons/ti";
+import { RiImageAddFill } from "react-icons/ri";
 
 // types
 import type {
@@ -125,6 +127,13 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         }
       }
     `;
+    const UPDATE_GROUP_PICTURE = gql`
+      mutation ChangePageInfo($editGroupData: EditGroupInput!) {
+        editGroup(editGroupData: $editGroupData) {
+          message
+        }
+      }
+    `;
 
     switch (profileType) {
       case "personal": {
@@ -145,7 +154,14 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         break;
       }
       case "group": {
-        query = UPDATE_PAGE_PICTURE;
+        if (!normalUser) hasAccessToChangePicture = true;
+
+        if (!profileInfo.profilePicture) {
+          NoProfilePictureIconWithoutAccess = TiGroup;
+          NoProfilePictureIcon = RiImageAddFill;
+        }
+
+        query = UPDATE_GROUP_PICTURE;
 
         break;
       }
@@ -172,13 +188,17 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
               break;
             }
 
+            case "group":
             case "page": {
+              const queryName =
+                profileType === "group" ? "getSingleGroup" : "getPageInfo";
+
               updateQuery((prev) => {
                 return {
                   ...prev!,
-                  getPageInfo: {
+                  [queryName]: {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ...(prev as any)!.getPageInfo,
+                    ...(prev as any)?.[queryName],
                     [pictureName]: {
                       public_id: newValues[pictureName].public_id,
                       secure_url: newValues[pictureName].secure_url,

@@ -29,6 +29,7 @@ import { AiOutlineUserSwitch } from "react-icons/ai";
 
 // utils
 import { uploadMedia } from "@/lib/utils";
+import classNames from "classnames";
 
 const SignupPage = () => {
   const { setUser } = useContext(authContext);
@@ -374,9 +375,13 @@ const SignupPage = () => {
             <motion.div layout="position" className="mt-auto">
               <Label
                 htmlFor="profile-picture"
-                className={`text-primary text-center font-semibold bg-white block rounded-sm shadow-md cursor-pointer hover:scale-[1.025] choose-picture-label ${
-                  profilePicture ? "active" : ""
-                }`}
+                className={classNames(
+                  disableForm
+                    ? "opacity-20 cursor-not-allowed hover:!scale-100"
+                    : "cursor-pointer",
+                  coverPicture ? "active" : "",
+                  "text-primary text-center font-semibold bg-white block rounded-sm shadow-md hover:scale-[1.025] choose-picture-label"
+                )}
               >
                 {profilePicture ? (
                   <AiOutlineUserSwitch size={30} className="mx-auto" />
@@ -398,6 +403,7 @@ const SignupPage = () => {
                   <Button
                     className="red-btn w-full"
                     onClick={() => setProfilePicture(null)}
+                    disabled={disableForm}
                   >
                     Cancel
                   </Button>
@@ -444,9 +450,13 @@ const SignupPage = () => {
             <motion.div layout="position" className="mt-auto">
               <Label
                 htmlFor="cover-picture"
-                className={`text-primary text-center font-semibold bg-white block rounded-sm shadow-md cursor-pointer hover:scale-[1.025] choose-picture-label ${
-                  coverPicture ? "active" : ""
-                }`}
+                className={classNames(
+                  disableForm
+                    ? "opacity-20 cursor-not-allowed hover:!scale-100"
+                    : "cursor-pointer",
+                  coverPicture ? "active" : "",
+                  "text-primary text-center font-semibold bg-white block rounded-sm shadow-md hover:scale-[1.025] choose-picture-label"
+                )}
               >
                 <FaMountainSun size={30} className="mx-auto" />
                 {coverPicture ? "change" : "add"} cover picture
@@ -463,6 +473,7 @@ const SignupPage = () => {
                   <Button
                     className="red-btn w-full"
                     onClick={() => setCoverPicture(null)}
+                    disabled={disableForm}
                   >
                     Cancel
                   </Button>

@@ -159,7 +159,7 @@ const ProfilePage = () => {
         profileType="personal"
         coverPictureRef={coverPictureRef}
         profilePictureRef={profilePictureRef}
-        profileOwner={profileOwner}
+        profileInfo={profileOwner}
       />
 
       {/* tabs bar */}

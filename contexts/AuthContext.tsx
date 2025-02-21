@@ -62,8 +62,11 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
     "/friends",
     "/friends/requests",
     "/peopleMayKnow",
-    "/editPost/",
     "/savedPosts",
+    "/groups/new",
+    "/groups",
+    "/pages",
+    "/pages/new",
   ];
 
   const [user, setUser] = useState<UserType | null>(null);
@@ -83,8 +86,9 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
   if (loading) return <Loading />;
 
   if (
-    (needAuthRoutes.some((route) => pathname.startsWith(route)) ||
-      pathname === "/") &&
+    (needAuthRoutes.includes(pathname) ||
+      pathname === "/" ||
+      pathname.startsWith("/editPost/")) &&
     !user
   ) {
     return (

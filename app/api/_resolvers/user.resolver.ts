@@ -662,13 +662,10 @@ const userResolvers = {
     loginUser: async (
       _: unknown,
       {
-        loginCredintials,
+        loginCredintials: { username, password },
       }: { loginCredintials: Pick<ReqUserType, "username" | "password"> },
       context: { req: NextRequest }
     ) => {
-      const username = loginCredintials.username;
-      const password = loginCredintials.password;
-
       const requiredValues = [
         { key: "username", value: username },
         { key: "password", value: password },
@@ -685,21 +682,21 @@ const userResolvers = {
 
       return await handleConnectDB({
         async resolveCallback() {
-          const existUser = (
+          const userDoc = (
             await User.findOne({ username }).select(
-              "_id username email address profilePicture coverPicture"
+              "_id username email address profilePicture coverPicture password"
             )
           )?._doc;
 
-          if (!existUser) {
-            throw new GraphQLError("username not found", {
+          if (!userDoc) {
+            throw new GraphQLError("no user with this username not found", {
               extensions: {
-                code: ApolloServerErrorCode.PERSISTED_QUERY_NOT_FOUND,
+                code: "NOT_FOUND",
               },
             });
           }
 
-          const comparePassword = await compare(password, existUser.password);
+          const comparePassword = await compare(password, userDoc.password);
 
           if (!comparePassword) {
             throw new GraphQLError("password incorrect", {
@@ -708,7 +705,7 @@ const userResolvers = {
           }
 
           const token = await new SignJWT({
-            id: existUser._id,
+            id: userDoc._id,
           })
             .setProtectedHeader({ alg: "HS256" })
             .setExpirationTime("30d")
@@ -716,7 +713,7 @@ const userResolvers = {
 
           context.req.cookies.set("token", token);
 
-          return { ...existUser, password: undefined };
+          return { ...userDoc, password: undefined };
         },
         publicErrorMsg: "something went wrong while do this operation",
         showDatabaseErr: true,

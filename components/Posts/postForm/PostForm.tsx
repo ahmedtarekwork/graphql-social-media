@@ -168,6 +168,7 @@ const PostForm = ({
 }: Props) => {
   const router = useRouter();
   const pageId = (useParams()?.pageId || "") as string;
+  const groupId = (useParams()?.groupId || "") as string;
 
   const { setData } = useContext(PostsContext);
 
@@ -308,7 +309,7 @@ const PostForm = ({
         community: profileType || "personal",
       };
       if (profileType === "page") postData.communityId = pageId;
-      if (profileType === "group") postData.communityId = pageId;
+      if (profileType === "group") postData.communityId = groupId;
 
       if (!caption && !media.length) {
         toast.error("post must have at least caption or one media", {

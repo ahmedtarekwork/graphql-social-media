@@ -37,7 +37,6 @@
     "javascript-time-ago": "^2.5.11",
     "jose": "^5.9.6",
     "js-abbreviation-number": "^1.4.0",
-    "lucide-react": "^0.453.0",
     "mongoose": "^8.7.2",
     "nanoid": "^5.0.7",
     "next": "14.2.15",

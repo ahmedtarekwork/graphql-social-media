@@ -9,6 +9,9 @@ import { FormEvent, useRef, useState } from "react";
 
 // components
 import Loading from "@/components/Loading";
+import Radio_DropDownMenu, {
+  Radio_DropDownMenuRefType,
+} from "@/components/Radio_DropDownMenu";
 
 // shadcn
 import { Input } from "@/components/ui/input";
@@ -21,46 +24,48 @@ import { AiOutlineUserSwitch } from "react-icons/ai";
 import { FaImage } from "react-icons/fa";
 
 // utils
+import classNames from "classnames";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/utils";
-import classNames from "classnames";
+import { nanoid } from "nanoid";
 
-// typese
-import type { PageType } from "@/lib/types";
+// types
+import type { GroupInputDataType, GroupType } from "@/lib/types";
 
 // gql
 import { gql, useMutation } from "@apollo/client";
 
-const MAKE_NEW_PAGE = gql`
-  mutation AddPage($pageData: AddPageInput!) {
-    addPage(pageData: $pageData) {
+const MAKE_NEW_GROUP = gql`
+  mutation AddPage($groupData: AddGroupInput!) {
+    addGroup(groupData: $groupData) {
       _id
     }
   }
 `;
 
-const NewPageFormPage = () => {
+const NewGroupFormPage = () => {
   const router = useRouter();
 
   const formRef = useRef<HTMLFormElement>(null);
-  const pageNameInputRef = useRef<HTMLInputElement>(null);
+  const groupNameInputRef = useRef<HTMLInputElement>(null);
+  const privacyOptionsListRef = useRef<Radio_DropDownMenuRefType>(null);
 
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [coverPicture, setCoverPicture] = useState<File | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
-  const [makeNewPage, { loading }] = useMutation(MAKE_NEW_PAGE, {
+  const [makeNewGroup, { loading }] = useMutation(MAKE_NEW_GROUP, {
     onCompleted(data) {
-      toast.success("page created successfully", { duration: 7000 });
+      toast.success("group created successfully", { duration: 7000 });
 
-      const pageId = data?.addPage?._id;
-      if (pageId) router.push(`/pages/${pageId}`);
+      const groupId = data?.addGroup?._id;
+      if (groupId) router.push(`/groups/${groupId}`);
     },
 
     onError({ graphQLErrors }) {
       toast.error(
         graphQLErrors?.[0]?.message ||
-          "can't make this new page at the momment",
+          "can't make this new group at the momment",
         { duration: 7000 }
       );
     },
@@ -72,16 +77,17 @@ const NewPageFormPage = () => {
     if (disableBtn) return;
 
     const form = formRef.current;
-    const pageData: Pick<PageType, "name" | "coverPicture" | "profilePicture"> =
-      {
-        name: form?.["page-name"]?.value || "",
-        profilePicture: null,
-        coverPicture: null,
-      };
+    const groupData: GroupInputDataType = {
+      name: form?.["group-name"]?.value || "",
+      profilePicture: null,
+      coverPicture: null,
+      privacy: (privacyOptionsListRef.current?.selected ||
+        "public") as GroupType["privacy"],
+    };
 
-    if (!pageData.name) {
-      toast.error("page must have a name", { duration: 7000 });
-      pageNameInputRef.current?.classList.add(
+    if (!groupData.name) {
+      toast.error("group must have a name", { duration: 7000 });
+      groupNameInputRef.current?.classList.add(
         "!border-red-700",
         "placeholder:!text-red-700"
       );
@@ -99,10 +105,10 @@ const NewPageFormPage = () => {
         );
 
         if (profilePicture && profilePictureRes.status === "fulfilled")
-          pageData.profilePicture = profilePictureRes.value[0];
+          groupData.profilePicture = profilePictureRes.value[0];
 
         if (coverPicture && coverPictureRes.status === "fulfilled")
-          pageData.coverPicture = coverPictureRes.value[0];
+          groupData.coverPicture = coverPictureRes.value[0];
       } catch (_) {
         toast.error("something went wrong while uploading pictures");
         return;
@@ -111,7 +117,7 @@ const NewPageFormPage = () => {
       }
     }
 
-    await makeNewPage({ variables: { pageData } });
+    await makeNewGroup({ variables: { groupData } });
     form?.reset();
     setProfilePicture(null);
     setCoverPicture(null);
@@ -122,16 +128,30 @@ const NewPageFormPage = () => {
   return (
     <>
       <h1 className="font-bold text-primary underline underline-offset-8 text-2xl">
-        Create a new page
+        Create a new Group
       </h1>
 
       <form ref={formRef} className="mt-3 space-y-3" onSubmit={handleSubmit}>
         <Input
-          ref={pageNameInputRef}
-          name="page-name"
-          placeholder="page name..."
+          ref={groupNameInputRef}
+          name="group-name"
+          placeholder="group name..."
           disabled={disableBtn}
           className="transition duration-200"
+        />
+
+        <Radio_DropDownMenu
+          ref={privacyOptionsListRef}
+          label="group privacy"
+          options={[
+            {
+              id: nanoid(),
+              option: "public",
+              text: "public",
+              defaultSelected: true,
+            },
+            { id: nanoid(), option: "members_only", text: "members only" },
+          ]}
         />
 
         <AnimatePresence>
@@ -303,4 +323,4 @@ const NewPageFormPage = () => {
     </>
   );
 };
-export default NewPageFormPage;
+export default NewGroupFormPage;

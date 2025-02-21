@@ -40,8 +40,7 @@ type Props = {
 } & (
   | {
       profileType: "personal";
-      profileOwner: UserType;
-      pageInfo?: never;
+      profileInfo: UserType;
       updateQuery?: never;
       isUserAdminUpdateQuery?: never;
       normalUser?: never;
@@ -49,8 +48,7 @@ type Props = {
     }
   | {
       profileType: "page";
-      pageInfo: PageType;
-      profileOwner?: never;
+      profileInfo: PageType;
       updateQuery: ReturnTypeOfUseQuery["updateQuery"];
       isUserAdminUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
       normalUser: boolean;
@@ -58,8 +56,7 @@ type Props = {
     }
   | {
       profileType: "group";
-      profileOwner?: never;
-      pageInfo?: never;
+      profileInfo: GroupType;
       updateQuery: ReturnTypeOfUseQuery["updateQuery"];
       isUserAdminUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
       normalUser: boolean;
@@ -70,9 +67,8 @@ type Props = {
 const ProfileTopInfo = ({
   coverPictureRef,
   profilePictureRef,
-  profileOwner,
+  profileInfo,
   profileType,
-  pageInfo,
   updateQuery,
   isUserAdminUpdateQuery,
   normalUser,
@@ -90,28 +86,28 @@ const ProfileTopInfo = ({
 
   switch (profileType) {
     case "personal": {
-      values.name = profileOwner.username;
-      values.secondaryText = profileOwner.email;
+      values.name = profileInfo.username;
+      values.secondaryText = profileInfo.email;
 
       profileAndCoverPictureProps = {
         profileType,
-        profileInfo: profileOwner,
+        profileInfo,
       };
 
       break;
     }
 
     case "page": {
-      values.name = pageInfo.name;
+      values.name = profileInfo.name;
       values.secondaryText = (
         <p className="text-gray-600 text-md truncate">
-          <b className="text-primary">{pageInfo.followersCount}</b> followers
+          <b className="text-primary">{profileInfo.followersCount}</b> followers
         </p>
       );
 
       profileAndCoverPictureProps = {
         profileType,
-        profileInfo: pageInfo,
+        profileInfo,
         updateQuery,
         normalUser: true,
       };
@@ -119,9 +115,16 @@ const ProfileTopInfo = ({
     }
 
     case "group": {
+      values.name = profileInfo.name;
+      values.secondaryText = (
+        <p className="text-gray-600 text-md truncate">
+          <b className="text-primary">{profileInfo.membersCount}</b> members
+        </p>
+      );
+
       profileAndCoverPictureProps = {
         profileType,
-        profileInfo: {} as GroupType,
+        profileInfo,
         updateQuery,
         normalUser: true,
       };
@@ -166,12 +169,12 @@ const ProfileTopInfo = ({
 
             {profileType === "personal" && (
               <>
-                <FriendshipBtns userId={profileOwner._id} />
+                <FriendshipBtns userId={profileInfo._id} />
 
                 <Button
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(profileOwner._id);
+                      await navigator.clipboard.writeText(profileInfo._id);
                       toast.success("id copied successfully");
                       // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     } catch (_) {
@@ -186,7 +189,7 @@ const ProfileTopInfo = ({
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        `${document.location.origin}/user/${profileOwner._id}`
+                        `${document.location.origin}/user/${profileInfo._id}`
                       );
                       toast.success("URL copied successfully");
                       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -204,7 +207,7 @@ const ProfileTopInfo = ({
 
         <div className="flex items-center gap-2 flex-wrap max-sm:mx-auto">
           {profileType === "page" ? (
-            pageInfo.owner._id !== user?._id && <TogglePageFollow />
+            profileInfo.owner._id !== user?._id && <TogglePageFollow />
           ) : (
             <></>
           )}

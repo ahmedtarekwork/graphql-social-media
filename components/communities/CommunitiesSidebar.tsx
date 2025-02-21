@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/sidebar";
 
 // tpyes
-import { type PagesType } from "../page";
+import type { CommunitiesType } from "@/lib/types";
 import { type IconType } from "react-icons";
 
 // icons
@@ -29,49 +29,50 @@ import { MdExplore, MdFiberNew } from "react-icons/md";
 import { FaBars } from "react-icons/fa";
 
 type Props = {
-  setPagesType: Dispatch<SetStateAction<PagesType>>;
+  setCommunitiesType: Dispatch<SetStateAction<CommunitiesType>>;
+  mode: "pages" | "groups";
 };
 
-const sidebarItems: {
-  content: string;
-  type: PagesType;
-  Icon: IconType;
-}[] = [
-  {
-    content: "owned pages",
-    type: "owned",
-    Icon: FaHandBackFist,
-  },
-  {
-    content: "admin pages",
-    type: "admin",
-    Icon: RiAdminFill,
-  },
-  {
-    content: "followed pages",
-    type: "followed",
-    Icon: FaHeartCircleCheck,
-  },
-  {
-    content: "explore pages",
-    type: "explore",
-    Icon: MdExplore,
-  },
-];
-
-const PagesSidebar = ({ setPagesType }: Props) => {
+const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
   const { isMobile, toggleSidebar } = useSidebar();
+
+  const sidebarItems: {
+    content: string;
+    type: CommunitiesType;
+    Icon: IconType;
+  }[] = [
+    {
+      content: `owned ${mode}`,
+      type: "owned",
+      Icon: FaHandBackFist,
+    },
+    {
+      content: `admin ${mode}`,
+      type: "admin",
+      Icon: RiAdminFill,
+    },
+    {
+      content: `followed ${mode}`,
+      type: "followed",
+      Icon: FaHeartCircleCheck,
+    },
+    {
+      content: `explore ${mode}`,
+      type: "explore",
+      Icon: MdExplore,
+    },
+  ];
 
   return (
     <>
-      {isMobile && (
-        <Button onClick={toggleSidebar} className="mb-3">
-          <FaBars />
-          other pages
-        </Button>
-      )}
+      {/* {isMobile && ( */}
+      <Button onClick={toggleSidebar} className="mb-3">
+        <FaBars />
+        other {mode}
+      </Button>
+      {/* // )} */}
 
-      <SidebarElement id="pages-sidebar">
+      <SidebarElement id="communities-sidebar">
         {isMobile && (
           <SidebarHeader>
             <Button
@@ -92,7 +93,7 @@ const PagesSidebar = ({ setPagesType }: Props) => {
                     <Button
                       className="w-full !py-6 flex justify-start"
                       onClick={() => {
-                        setPagesType(type);
+                        setCommunitiesType(type);
                         toggleSidebar();
                       }}
                     >
@@ -105,12 +106,12 @@ const PagesSidebar = ({ setPagesType }: Props) => {
                 <SidebarMenuItem>
                   <Button asChild>
                     <Link
-                      href="/pages/new"
+                      href={`/${mode}/new`}
                       className="w-full !py-6 flex !justify-start"
                       onClick={toggleSidebar}
                     >
                       <MdFiberNew size={22} />
-                      create new page
+                      create new {mode.replace("s", "")}
                     </Link>
                   </Button>
                 </SidebarMenuItem>
@@ -122,4 +123,4 @@ const PagesSidebar = ({ setPagesType }: Props) => {
     </>
   );
 };
-export default PagesSidebar;
+export default CommunitiesSidebar;

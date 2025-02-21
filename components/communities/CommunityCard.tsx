@@ -4,13 +4,14 @@ import Link from "next/link";
 
 // components
 // shadcn
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 // types
 import type { NotFullCommunity } from "@/lib/types";
 
 // icons
 import { FaEye, FaFlag } from "react-icons/fa";
+import { TiGroup } from "react-icons/ti";
 
 type Props = {
   community: NotFullCommunity;
@@ -19,6 +20,9 @@ type Props = {
 
 const CommunityCard = ({ community, type }: Props) => {
   const { name, _id, profilePicture } = community;
+
+  let Icon = type === "page" ? FaFlag : TiGroup;
+
   return (
     <li className="border-2 border-primary rounded-sm space-y-2 pb-2">
       <Link href={`/${type}s/${_id}`} className="peer block">
@@ -32,7 +36,7 @@ const CommunityCard = ({ community, type }: Props) => {
           />
         ) : (
           <div className="bg-primary w-full aspect-[1] grid place-content-center">
-            <FaFlag size={75} fill="white" />
+            <Icon size={75} fill="white" />
           </div>
         )}
       </Link>
