@@ -3,11 +3,14 @@ import { useParams } from "next/navigation";
 
 // react
 import {
-  type ReactNode,
-  type UIEventHandler,
+  useContext,
   useEffect,
   useRef,
   useState,
+
+  // types
+  type ReactNode,
+  type UIEventHandler,
 } from "react";
 
 // components
@@ -17,6 +20,7 @@ import UserCard from "@/components/UserCard";
 import RemoveAdminBtn from "./RemoveAdminBtn";
 
 // shadcn
+import { Button } from "@/components/ui/button";
 import {
   DialogContent,
   DialogDescription,
@@ -34,7 +38,7 @@ import emptySVG from "/public/illustrations/search.svg";
 
 // types
 import type { NotFullUserType } from "@/lib/types";
-import { Button } from "@/components/ui/button";
+import { authContext } from "@/contexts/AuthContext";
 
 type Props = {
   profileType: "page" | "group";
@@ -50,7 +54,7 @@ const Wrapper = ({
 }) => (
   <DialogContent
     className="overflow-auto"
-    aria-describedby="notifications-dialog"
+    aria-describedby="admins-list-dialog"
     onScroll={handleScroll}
   >
     <DialogHeader>
@@ -67,13 +71,22 @@ const Wrapper = ({
 );
 
 const AdminsList = ({ profileType, isUserOwner }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
+  const { user } = useContext(authContext);
+
+  const params = useParams();
+  const queryName = `get${profileType[0].toUpperCase()}${profileType.slice(
+    1
+  )}AdminsList`;
 
   const GET_PAGE_ADMINS_LIST = gql`
-    query GetPageAdminsList(
-      $paginationData: PaginatedItemsInputWithIdAndSkip!
+    query Get${profileType[0].toUpperCase()}${profileType.slice(1)}AdminsList(
+      $paginationData: ${
+        profileType === "page"
+          ? "PaginatedItemsInputWithIdAndSkip"
+          : "PaginationWithSkipAndGroupId"
+      }!
     ) {
-      getPageAdminsList(paginationData: $paginationData) {
+      ${queryName}(paginationData: $paginationData) {
         isFinalPage
         admins {
           _id
@@ -95,7 +108,7 @@ const AdminsList = ({ profileType, isUserOwner }: Props) => {
 
   const queryVariables = () => ({
     paginationData: {
-      pageId,
+      [`${profileType}Id`]: params?.[`${profileType}Id`] || "",
       ...pageAndLimit.current,
     },
   });
@@ -107,8 +120,8 @@ const AdminsList = ({ profileType, isUserOwner }: Props) => {
     }
   );
 
-  const admins = (data?.getPageAdminsList?.admins || []) as NotFullUserType[];
-  const isFinalPage = data?.getPageAdminsList?.isFinalPage;
+  const admins = (data?.[queryName]?.admins || []) as NotFullUserType[];
+  const isFinalPage = data?.[queryName]?.isFinalPage;
 
   const handleFetchMore = () => {
     if (stopFetchMore) isWaitForFetch.current = true;
@@ -129,12 +142,12 @@ const AdminsList = ({ profileType, isUserOwner }: Props) => {
         if (!fetchMoreResult) return data;
 
         return {
-          getPageAdminsList: {
+          [queryName]: {
             admins: [
               ...admins,
-              ...(fetchMoreResult?.getPageAdminsList?.admins || []),
+              ...(fetchMoreResult?.[queryName]?.admins || []),
             ],
-            isFinalPage: !!fetchMoreResult?.getPageAdminsList?.isFinalPage,
+            isFinalPage: !!fetchMoreResult?.[queryName]?.isFinalPage,
           },
         };
       },
@@ -188,30 +201,33 @@ const AdminsList = ({ profileType, isUserOwner }: Props) => {
       }}
     >
       <ul className="space-y-2">
-        {admins.map((user) => {
-          return (
-            <UserCard
-              key={user._id}
-              btnType="CUSTOM"
-              cardMode="ROW"
-              user={user}
-              customCardBtn={({ btnStyle }) =>
-                isUserOwner ? (
-                  <RemoveAdminBtn
-                    userId={user._id}
-                    adminsListUpdateQuery={updateQuery}
-                    btnStyle={btnStyle}
-                    pageAndLimit={pageAndLimit}
-                    fetchMoreLoading={fetchMoreLoading}
-                    setStopFetchMore={setStopFetchMore}
-                  />
-                ) : (
-                  <></>
-                )
-              }
-            />
-          );
-        })}
+        {admins
+          .filter(({ _id }) => _id.toString() !== user?._id.toString())
+          .map((user) => {
+            return (
+              <UserCard
+                key={user._id}
+                btnType="CUSTOM"
+                cardMode="ROW"
+                user={user}
+                customCardBtn={({ btnStyle }) =>
+                  isUserOwner ? (
+                    <RemoveAdminBtn
+                      profileType={profileType}
+                      userId={user._id}
+                      adminsListUpdateQuery={updateQuery}
+                      btnStyle={btnStyle}
+                      pageAndLimit={pageAndLimit}
+                      fetchMoreLoading={fetchMoreLoading}
+                      setStopFetchMore={setStopFetchMore}
+                    />
+                  ) : (
+                    <></>
+                  )
+                }
+              />
+            );
+          })}
       </ul>
       {!isFinalPage && (
         <Button onClick={handleFetchMore} disabled={loading}>

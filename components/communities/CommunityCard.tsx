@@ -1,8 +1,8 @@
 // nextjs
-import Image from "next/image";
 import Link from "next/link";
 
 // components
+import ImageWithLoading from "../ImageWithLoading";
 // shadcn
 import { Button } from "../ui/button";
 
@@ -27,7 +27,7 @@ const CommunityCard = ({ community, type }: Props) => {
     <li className="border-2 border-primary rounded-sm space-y-2 pb-2">
       <Link href={`/${type}s/${_id}`} className="peer block">
         {profilePicture?.secure_url ? (
-          <Image
+          <ImageWithLoading
             alt={`${type} profile picture`}
             src={profilePicture.secure_url}
             width={180}
@@ -43,7 +43,7 @@ const CommunityCard = ({ community, type }: Props) => {
 
       <Link
         href={`${type}s/${_id}`}
-        className="truncate w-fit font-bold block hover:underline peer-hover:underline px-[2.5%]"
+        className="text-black truncate w-fit font-bold block hover:underline peer-hover:underline px-[2.5%]"
       >
         {name}
       </Link>

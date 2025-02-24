@@ -83,7 +83,6 @@ const DeleteMediaFromPostOrCommentBtn = ({
           prev.filter(({ public_id: id }) => mediaId !== id)
         );
 
-        // TODO: FIX BUG WHEN REMOVE MEDIA IT STILL NOT REMOVED
         if (type === "post") {
           setData((prev) => ({
             ...prev,

@@ -23,6 +23,9 @@ const groupTypeDefs = gql`
 
     isUserMemberInGroup(groupId: ID!): IsUserMemberInGroupResponse!
     isUserAdminInGroup(groupId: ID!): IsUserAdminInGroupResponse!
+    isUserSentJoinRequest(groupId: ID!): IsUserSentJoinRequestResponseType!
+
+    joinRequestsCount(groupId: ID!): JoinRequestsCountResponse!
   }
 
   type Mutation {
@@ -30,11 +33,15 @@ const groupTypeDefs = gql`
     editGroup(editGroupData: EditGroupInput!): SuccessResponseType!
     deleteGroup(groupId: ID!): SuccessResponseType!
 
-    toggleGroupAdmin(
-      toggleGroupAdminData: ToggleGroupAdminInput!
+    removePageProfileOrCoverPicture(
+      removePictureInfo: RemoveGroupPictureInfoInput!
     ): SuccessResponseType!
 
-    joinGroup(groupId: ID!): JoinGroupResponseType!
+    toggleGroupAdmin(
+      toggleAdminData: ToggleGroupAdminInput!
+    ): SuccessResponseType!
+
+    joinGroup(groupId: ID!): SuccessResponseType!
     exitGroup(groupId: ID!): SuccessResponseType!
 
     expulsingFromTheGroup(
@@ -54,9 +61,23 @@ const groupTypeDefs = gql`
     privacy: GroupPrivacy!
     profilePicture: ImageType
     coverPicture: ImageType
-    admins: [User!]!
   }
 
+  type NotFullGroup {
+    _id: ID!
+    name: String!
+    profilePicture: ImageType
+    membersCount: Int!
+    owner: String
+  }
+
+  type JoinRequestsCountResponse {
+    count: Int!
+  }
+
+  type IsUserSentJoinRequestResponseType {
+    isUserSentJoinRequest: Boolean!
+  }
   type IsUserAdminInGroupResponse {
     isUserAdminInGroup: Boolean!
   }
@@ -82,22 +103,28 @@ const groupTypeDefs = gql`
   }
 
   type GetJoinRequestsResponse {
-    requests: [GroupRequest!]!
+    requests: [JoinGroupRequestResponseType!]!
     isFinalPage: Boolean!
+  }
+
+  type JoinGroupRequestResponseType {
+    _id: ID!
+    user: NotFullUser!
   }
 
   type GetGroupsResponse {
-    groups: [Group!]!
+    groups: [NotFullGroup!]!
     isFinalPage: Boolean!
-  }
-
-  type JoinGroupResponseType {
-    message: String!
   }
 
   enum GroupPrivacy {
     public
     members_only
+  }
+
+  input RemoveGroupPictureInfoInput {
+    groupId: ID!
+    pictureType: PicturesTypes!
   }
 
   input ExpulsingFromTheGroupInput {
@@ -120,18 +147,20 @@ const groupTypeDefs = gql`
   }
 
   input ToggleGroupAdminInput {
-    adminId: ID!
+    newAdminId: ID!
     groupId: ID!
+    toggle: ToggleEnum!
   }
 
-  # group request
-  type GroupRequest {
-    _id: ID! # ID of request itself
-    user: User!
+  enum ToggleEnum {
+    add
+    remove
   }
 
   input HandleGroupRequestInput {
     requestId: ID!
+    groupId: ID!
+    senderId: ID!
     acception: Boolean!
   }
 

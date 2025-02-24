@@ -11,7 +11,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const DeletePageBtn = () => {
+const DeleteCommunityBtn = () => {
   return (
     <AlertDialog>
       <Button asChild className="red-btn">
@@ -40,4 +40,4 @@ const DeletePageBtn = () => {
     </AlertDialog>
   );
 };
-export default DeletePageBtn;
+export default DeleteCommunityBtn;

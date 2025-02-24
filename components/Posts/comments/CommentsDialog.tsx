@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 // react
-import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 
 // context
 import { authContext } from "@/contexts/AuthContext";
@@ -68,8 +68,8 @@ import { toast } from "sonner";
 import classNames from "classnames";
 
 type Props = {
-  triggerBtn: ReactNode;
   postId: string;
+  blockComments: boolean;
 };
 
 TimeAgo.addLocale(en);
@@ -117,7 +117,7 @@ const GET_POST_COMMENTS = gql`
   }
 `;
 
-const CommentsDialog = ({ triggerBtn, postId }: Props) => {
+const CommentsDialog = ({ postId, blockComments }: Props) => {
   const { user } = useContext(authContext);
 
   const [mode, setMode] = useState<"new" | "edit">("new");
@@ -162,7 +162,13 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
 
   const commentFromProps =
     mode === "new"
-      ? { mode, postId, skipCount, setStopFetchMore, fetchMoreLoading }
+      ? {
+          mode,
+          postId,
+          skipCount,
+          setStopFetchMore,
+          fetchMoreLoading,
+        }
       : {
           mode,
           selectedCommentToEdit: selectedCommentToEdit!,
@@ -211,282 +217,278 @@ const CommentsDialog = ({ triggerBtn, postId }: Props) => {
   }, []);
 
   return (
-    <Dialog>
-      {triggerBtn}
+    <DialogContent
+      className="overflow-auto p-0"
+      aria-describedby="comments-dialog"
+      onScroll={(e) => {
+        const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+        const isBottom = scrollTop + clientHeight >= scrollHeight;
 
-      <DialogContent
-        className="p-0"
-        onScroll={(e) => {
-          const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-          const isBottom = scrollTop + clientHeight >= scrollHeight;
+        if (isBottom) handleFetchMore();
+      }}
+    >
+      <DialogHeader className="p-5">
+        <DialogTitle className="text-secondary underline mb-3">
+          Post Comments
+        </DialogTitle>
 
-          if (isBottom) handleFetchMore();
-        }}
-      >
-        <DialogHeader className="p-5">
-          <DialogTitle className="text-secondary underline">
-            Post Comments
-          </DialogTitle>
+        <VisuallyHidden>
+          <DialogDescription>post comments list</DialogDescription>
+        </VisuallyHidden>
 
-          <VisuallyHidden>
-            <DialogDescription>post comments list</DialogDescription>
-          </VisuallyHidden>
+        {loading && !fetchMoreLoading && <Loading />}
 
-          {loading && !fetchMoreLoading && <Loading />}
+        {!loading && error && !comments.length && (
+          <IllustrationPage
+            content="can't get this post comments at the momment"
+            svg={_404SVG}
+            btn={{
+              type: "custom",
+              component: (
+                <Button
+                  className="mx-auto"
+                  onClick={() => window.location.reload()}
+                >
+                  <FaArrowRotateLeft />
+                  refresh page
+                </Button>
+              ),
+            }}
+          />
+        )}
 
-          {!loading && error && !comments.length && (
-            <IllustrationPage
-              content="can't get this post comments at the momment"
-              svg={_404SVG}
-              btn={{
-                type: "custom",
-                component: (
-                  <Button
-                    className="mx-auto"
-                    onClick={() => window.location.reload()}
-                  >
-                    <FaArrowRotateLeft />
-                    refresh page
-                  </Button>
-                ),
-              }}
-            />
-          )}
+        {!loading && !error && !comments.length && (
+          <IllustrationPage
+            svg={commentsSVG}
+            btn={{ type: "custom", component: <></> }}
+            content={
+              <>
+                This post doesn{"'"}t have any comments yet, <br />
+                You can be the first.
+              </>
+            }
+          />
+        )}
 
-          {!loading && !error && !comments.length && (
-            <IllustrationPage
-              svg={commentsSVG}
-              btn={{ type: "custom", component: <></> }}
-              content={
-                <>
-                  This post doesn{"'"}t have any comments yet, <br />
-                  You can be the first.
-                </>
-              }
-            />
-          )}
+        {/* render comments list */}
+        {!!comments.length && (
+          <ul className="space-y-1.5">
+            {comments.map(
+              ({
+                _id,
+                owner: { _id: ownerId, username, profilePicture },
+                comment,
+                media,
+                createdAt,
+                reactions,
+              }) => (
+                <li key={_id} className="flex items-start gap-1.5 flex-wrap">
+                  <div className="flex gap-1.5 flex-wrap flex-1">
+                    <Link href={`/user/${ownerId}`} className="peer h-fit">
+                      {profilePicture?.secure_url ? (
+                        <Image
+                          src={profilePicture.secure_url}
+                          alt="comment owner profile picture"
+                          width={55}
+                          height={55}
+                          className="aspect-[1] rounded-full"
+                        />
+                      ) : (
+                        <div className="bg-primary w-[55px] h-[55px] rounded-full grid place-content-center">
+                          <FaUser size={25} fill="white" />
+                        </div>
+                      )}
+                    </Link>
 
-          {/* render comments list */}
-          {!!comments.length && (
-            <ul className="space-y-1.5">
-              {comments.map(
-                ({
-                  _id,
-                  owner: { _id: ownerId, username, profilePicture },
-                  comment,
-                  media,
-                  createdAt,
-                  reactions,
-                }) => (
-                  <li key={_id} className="flex items-start gap-1.5 flex-wrap">
-                    <div className="flex gap-1.5 flex-wrap flex-1">
-                      <Link href={`/user/${ownerId}`} className="peer h-fit">
-                        {profilePicture?.secure_url ? (
-                          <Image
-                            src={profilePicture.secure_url}
-                            alt="comment owner profile picture"
-                            width={55}
-                            height={55}
-                            className="aspect-[1] rounded-full"
-                          />
-                        ) : (
-                          <div className="bg-primary w-[55px] h-[55px] rounded-full grid place-content-center">
-                            <FaUser size={25} fill="white" />
-                          </div>
-                        )}
-                      </Link>
+                    <div className="flex-1">
+                      <div className="peer-hover:[&_a]:underline bg-primary bg-opacity-20 rounded-sm p-2 text-left">
+                        <Link
+                          href={`/user/${ownerId}`}
+                          className="font-bold hover:underline"
+                        >
+                          {username}
+                        </Link>
 
-                      <div className="flex-1">
-                        <div className="peer-hover:[&_a]:underline bg-primary bg-opacity-20 rounded-sm p-2 text-left">
-                          <Link
-                            href={`/user/${ownerId}`}
-                            className="font-bold hover:underline"
-                          >
-                            {username}
-                          </Link>
+                        {comment && <p className="mb-2">{comment}</p>}
 
-                          {comment && <p className="mb-2">{comment}</p>}
+                        {!!media?.length && (
+                          <Dialog>
+                            <DialogTrigger className="w-full">
+                              <ul className="flex flex-wrap gap-1.5 [&>*]:flex-1">
+                                {(media || [])
+                                  .slice(0, 3)
+                                  .map(
+                                    ({ secure_url, public_id }, mediaIndex) => {
+                                      const isMoreThanThreeElements =
+                                        (media || []).length > 3;
 
-                          {!!media?.length && (
-                            <Dialog>
-                              <DialogTrigger className="w-full">
-                                <ul className="flex flex-wrap gap-1.5 [&>*]:flex-1">
-                                  {(media || [])
-                                    .slice(0, 3)
-                                    .map(
+                                      return (
+                                        <li
+                                          key={public_id}
+                                          className={classNames(
+                                            "grid place-content-center min-w-[150px]",
+                                            mediaIndex === 2 &&
+                                              isMoreThanThreeElements
+                                              ? "relative post-media-list-item-cover"
+                                              : ""
+                                          )}
+                                        >
+                                          <Image
+                                            src={secure_url}
+                                            alt={`media No.${
+                                              mediaIndex + 1
+                                            } of post`}
+                                            width={250}
+                                            height={250}
+                                            className="aspect-[1] object-contain"
+                                            priority
+                                          />
+                                        </li>
+                                      );
+                                    }
+                                  )}
+                              </ul>
+                            </DialogTrigger>
+
+                            <DialogContent>
+                              <DialogHeader>
+                                <VisuallyHidden>
+                                  <DialogTitle>
+                                    post media list dialog
+                                  </DialogTitle>
+                                  <DialogDescription>
+                                    This is post meida list dialog
+                                  </DialogDescription>
+                                </VisuallyHidden>
+
+                                <Carousel className="h-full flex gap-3">
+                                  <CarouselPrevious className="self-center !static" />
+
+                                  <CarouselContent className="h-full">
+                                    {(media || []).map(
                                       (
                                         { secure_url, public_id },
                                         mediaIndex
                                       ) => {
-                                        const isMoreThanThreeElements =
-                                          (media || []).length > 3;
-
                                         return (
-                                          <li
+                                          <CarouselItem
                                             key={public_id}
-                                            className={classNames(
-                                              "grid place-content-center min-w-[150px]",
-                                              mediaIndex === 2 &&
-                                                isMoreThanThreeElements
-                                                ? "relative post-media-list-item-cover"
-                                                : ""
-                                            )}
+                                            className="relative h-full"
                                           >
-                                            <Image
+                                            <ImageWithLoading
                                               src={secure_url}
                                               alt={`media No.${
                                                 mediaIndex + 1
                                               } of post`}
-                                              width={250}
-                                              height={250}
                                               className="aspect-[1] object-contain"
+                                              fill
                                               priority
                                             />
-                                          </li>
+                                          </CarouselItem>
                                         );
                                       }
                                     )}
-                                </ul>
-                              </DialogTrigger>
+                                  </CarouselContent>
 
-                              <DialogContent>
-                                <DialogHeader>
-                                  <VisuallyHidden>
-                                    <DialogTitle>
-                                      post media list dialog
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                      This is post meida list dialog
-                                    </DialogDescription>
-                                  </VisuallyHidden>
+                                  <CarouselNext className="self-center !static" />
+                                </Carousel>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
+                        )}
 
-                                  <Carousel className="h-full flex gap-3">
-                                    <CarouselPrevious className="self-center !static" />
-
-                                    <CarouselContent className="h-full">
-                                      {(media || []).map(
-                                        (
-                                          { secure_url, public_id },
-                                          mediaIndex
-                                        ) => {
-                                          return (
-                                            <CarouselItem
-                                              key={public_id}
-                                              className="relative h-full"
-                                            >
-                                              <ImageWithLoading
-                                                src={secure_url}
-                                                alt={`media No.${
-                                                  mediaIndex + 1
-                                                } of post`}
-                                                className="aspect-[1] object-contain"
-                                                fill
-                                                priority
-                                              />
-                                            </CarouselItem>
-                                          );
-                                        }
-                                      )}
-                                    </CarouselContent>
-
-                                    <CarouselNext className="self-center !static" />
-                                  </Carousel>
-                                </DialogHeader>
-                              </DialogContent>
-                            </Dialog>
-                          )}
-
-                          <div className="w-fit ml-auto">
-                            <ReactionsDialog
-                              type="comment"
-                              itemId={_id}
-                              reactionsCount={reactions}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-extralight text-gray-500 text-xs">
-                            {timeAgo.format(+createdAt)}
-                          </p>
-
-                          <ToggleReactionBtn itemId={_id} type="comment" />
+                        <div className="w-fit ml-auto">
+                          <ReactionsDialog
+                            type="comment"
+                            itemId={_id}
+                            reactionsCount={reactions}
+                          />
                         </div>
                       </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-extralight text-gray-500 text-xs">
+                          {timeAgo.format(+createdAt)}
+                        </p>
+
+                        <ToggleReactionBtn itemId={_id} type="comment" />
+                      </div>
                     </div>
+                  </div>
 
-                    {ownerId.toString() === user?._id.toString() && (
-                      <AlertDialog>
-                        <DropdownMenu modal={false}>
-                          <Button asChild>
-                            <DropdownMenuTrigger>
-                              <BsThreeDots />
-                            </DropdownMenuTrigger>
-                          </Button>
+                  {ownerId.toString() === user?._id.toString() && (
+                    <AlertDialog>
+                      <DropdownMenu modal={false}>
+                        <Button asChild>
+                          <DropdownMenuTrigger>
+                            <BsThreeDots />
+                          </DropdownMenuTrigger>
+                        </Button>
 
-                          <DropdownMenuContent
-                            className="space-y-0.5"
-                            style={{ pointerEvents: "all" }}
+                        <DropdownMenuContent
+                          className="space-y-0.5"
+                          style={{ pointerEvents: "all" }}
+                        >
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              setMode("edit");
+                              setSelectedCommentToEdit({
+                                _id,
+                                comment,
+                                media,
+                              });
+                            }}
+                            className="cursor-pointer flex flex-wrap gap-1.5 items-center hover:!text-green-600 text-green-600 hover:bg-green-600 hover:bg-opacity-20 transition duration-200"
                           >
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
+                            <FaPen />
+                            Edit
+                          </DropdownMenuItem>
 
-                                setMode("edit");
-                                setSelectedCommentToEdit({
-                                  _id,
-                                  comment,
-                                  media,
-                                });
-                              }}
-                              className="cursor-pointer flex flex-wrap gap-1.5 items-center hover:!text-green-600 text-green-600 hover:bg-green-600 hover:bg-opacity-20 transition duration-200"
-                            >
-                              <FaPen />
-                              Edit
-                            </DropdownMenuItem>
+                          <DropdownMenuItem className="p-0">
+                            <AlertDialogTrigger className="flex flex-wrap gap-1.5 items-center text-left cursor-pointer w-full text-red-600 px-2 py-1.5 hover:bg-red-600 hover:bg-opacity-20 transition duration-200">
+                              <FaTrash />
+                              Delete
+                            </AlertDialogTrigger>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                            <DropdownMenuItem className="p-0">
-                              <AlertDialogTrigger className="flex flex-wrap gap-1.5 items-center text-left cursor-pointer w-full text-red-600 px-2 py-1.5 hover:bg-red-600 hover:bg-opacity-20 transition duration-200">
-                                <FaTrash />
-                                Delete
-                              </AlertDialogTrigger>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <DeleteCommentDialog
+                        commentId={_id}
+                        skipCount={skipCount}
+                        fetchMoreLoading={fetchMoreLoading}
+                        setStopFetchMore={setStopFetchMore}
+                        setComments={setComments}
+                      />
+                    </AlertDialog>
+                  )}
+                </li>
+              )
+            )}
+          </ul>
+        )}
 
-                        <DeleteCommentDialog
-                          commentId={_id}
-                          skipCount={skipCount}
-                          fetchMoreLoading={fetchMoreLoading}
-                          setStopFetchMore={setStopFetchMore}
-                          setComments={setComments}
-                        />
-                      </AlertDialog>
-                    )}
-                  </li>
-                )
-              )}
-            </ul>
-          )}
+        {(fetchMoreLoading || (stopFetchMore && waitToFetchMore.current)) && (
+          <Loading size={16} withText withFullHeight={false} />
+        )}
 
-          {(fetchMoreLoading || (stopFetchMore && waitToFetchMore.current)) && (
-            <Loading size={16} withText withFullHeight={false} />
-          )}
+        {!isFinalPage && !!comments.length && !loading && (
+          <Button
+            disabled={loading || fetchMoreLoading}
+            onClick={handleFetchMore}
+            className="w-fit mx-auto"
+          >
+            See More
+          </Button>
+        )}
+      </DialogHeader>
 
-          {!isFinalPage && !!comments.length && !loading && (
-            <Button
-              disabled={loading || fetchMoreLoading}
-              onClick={handleFetchMore}
-              className="w-fit mx-auto"
-            >
-              See More
-            </Button>
-          )}
-        </DialogHeader>
-
+      {!blockComments && (
         <CommentForm {...commentFromProps} setComments={setComments} />
-      </DialogContent>
-    </Dialog>
+      )}
+    </DialogContent>
   );
 };
 export default CommentsDialog;

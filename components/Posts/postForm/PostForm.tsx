@@ -191,7 +191,6 @@ const PostForm = ({
           setData((prev) => {
             const newValues = options?.variables?.newPostData;
 
-            // TODO: SOLVE WHEN ADD NEW MEDIA IT DOESN'T EFFECT
             return {
               ...prev,
               posts: prev.posts.map((post) => {
@@ -465,7 +464,7 @@ const PostForm = ({
       />
       <label
         htmlFor="blockComments"
-        className="flex items-center justify-start gap-1.5 text-primary"
+        className="flex items-center justify-start gap-1.5 text-primary w-fit"
       >
         <div className="bg-opacity-20 w-5 h-5 bg-primary rounded-sm border border-secondary grid place-content-center">
           <FaCheck

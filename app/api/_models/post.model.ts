@@ -6,7 +6,7 @@ import reactionsSchema from "../_schemas/reactions.schema";
 const postSchema = new Schema(
   {
     caption: { type: String },
-    owner: { type: Types.ObjectId, ref: "User" },
+    owner: { type: Types.ObjectId, ref: "User", index: true },
     commentsCount: {
       type: Number,
       default: 0,
@@ -38,7 +38,7 @@ const postSchema = new Schema(
         type: Number,
         default: 0,
       },
-      users: [{ type: Types.ObjectId, ref: "User" }],
+      users: [{ type: Types.ObjectId, ref: "User", index: true }],
     },
     media: {
       type: [{ public_id: String, secure_url: String }],
@@ -56,20 +56,13 @@ const postSchema = new Schema(
     communityId: {
       type: Types.ObjectId,
       ref: function () {
-        switch ((this as { community: string }).community) {
-          case "page": {
-            return "Page";
-          }
-          case "group": {
-            return "Group";
-          }
-        }
+        const community = (this as { community: string }).community;
+        if (community !== "personal")
+          return `${community[0].toUpperCase()}${community.slice(1)}`;
       },
     },
   },
   { timestamps: true }
 );
-
-if (models["Post"]) delete models["Post"];
 
 export default models["Post"] ?? model("Post", postSchema);

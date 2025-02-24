@@ -45,10 +45,12 @@ const CHECK_USER = gql`
       profilePicture {
         public_id
         secure_url
+        _id
       }
       coverPicture {
         public_id
         secure_url
+        _id
       }
     }
   }

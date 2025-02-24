@@ -80,25 +80,11 @@ const publicTypeDefs = gql`
   }
 
   type NotFullCommunity {
-    _id: ID!
-    name: String!
+    _id: ID
+    name: String
     profilePicture: ImageType
-    followersCount: Int!
-    membersCount: Int!
-    owner: String
-  }
-  type NotFullPage {
-    _id: ID!
-    name: String!
-    profilePicture: ImageType
-    followersCount: Int!
-    owner: String
-  }
-  type NotFullGroup {
-    _id: ID!
-    name: String!
-    profilePicture: ImageType
-    membersCount: Int!
+    followersCount: Int
+    membersCount: Int
     owner: String
   }
 
@@ -148,6 +134,7 @@ const publicTypeDefs = gql`
   type ImageType {
     public_id: ID
     secure_url: String
+    _id: ID
   }
 
   input ImageInput {

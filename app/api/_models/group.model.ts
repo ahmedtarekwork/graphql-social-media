@@ -6,8 +6,8 @@ const groupSchema = new Schema(
       type: String,
       required: [true, "group name is required"],
     },
-    owner: { type: Types.ObjectId, ref: "User" },
-    admins: [{ type: Types.ObjectId, ref: "User" }],
+    owner: { type: Types.ObjectId, ref: "User", index: true },
+    admins: [{ type: Types.ObjectId, ref: "User", index: true }],
     membersCount: {
       type: Number,
       default: 0,
@@ -35,7 +35,7 @@ const groupSchema = new Schema(
     joinRequests: {
       type: [
         {
-          user: { type: Types.ObjectId, ref: "User" },
+          user: { type: Types.ObjectId, ref: "User", index: true },
         },
       ],
       default: [],

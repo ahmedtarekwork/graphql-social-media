@@ -77,6 +77,7 @@ const checkForPostPrivacy = async (
       media: 1,
       privacy: 1,
       community: 1,
+      communityId: 1,
       createdAt: 1,
     })) as PostType;
 

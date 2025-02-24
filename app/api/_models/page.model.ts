@@ -3,9 +3,9 @@ import { model, models, Schema, Types } from "mongoose";
 const pageSchema = new Schema(
   {
     name: { type: String, required: [true, "page must have a name"] },
-    owner: { type: Types.ObjectId, ref: "User" },
+    owner: { type: Types.ObjectId, ref: "User", index: true },
     admins: {
-      type: [{ type: Types.ObjectId, ref: "User" }],
+      type: [{ type: Types.ObjectId, ref: "User", index: true }],
       default: [],
     },
     followersCount: {

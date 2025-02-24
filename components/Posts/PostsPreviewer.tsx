@@ -63,7 +63,7 @@ type ModeType =
       normalUser?: never;
     }
   | {
-      mode: "singlePageInfoPage";
+      mode: "singleGroupInfoPage" | "singlePageInfoPage";
       isCurrentUserProfile?: never;
       profileOwner?: never;
       skipCount: MutableRefObject<number>;
@@ -88,7 +88,7 @@ const PostsPreviewer = ({
   mode,
   normalUser,
 }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
+  const params = useParams();
 
   const variables = {
     inputType: "PaginatedItemsInput",
@@ -112,11 +112,17 @@ const PostsPreviewer = ({
       variables.methodName = `getPagePosts`;
       break;
     }
+
+    case "singleGroupInfoPage": {
+      variables.inputType = "PaginationWithSkipAndGroupId";
+      variables.methodName = `getGroupPosts`;
+      break;
+    }
   }
 
   const GET_POSTS = (): DocumentNode => {
     return gql`
-    query GetUserPosts(
+    query GetPosts(
       $paginatedPosts: ${variables.inputType}!
     ) {
       ${variables.methodName}(paginatedPosts: $paginatedPosts) {
@@ -202,9 +208,12 @@ const PostsPreviewer = ({
         ? { userId: profileOwner._id }
         : {}),
 
-      ...(mode === "singlePageInfoPage" ? { pageId } : {}),
+      ...(mode === "singlePageInfoPage" ? { pageId: params.pageId } : {}),
+      ...(mode === "singleGroupInfoPage" ? { groupId: params.groupId } : {}),
 
-      ...(["profilePage", "singlePageInfoPage"].includes(mode)
+      ...(["profilePage", "singlePageInfoPage", "singleGroupInfoPage"].includes(
+        mode
+      )
         ? { skip: skipCount?.current || 0 }
         : {}),
     },
@@ -228,7 +237,7 @@ const PostsPreviewer = ({
     if (isFinalPage || loading || fetchMoreLoading || stopFetchMore || error)
       return;
 
-    if (pageAndLimit.current) pageAndLimit.current.page += 1;
+    if (posts.length) pageAndLimit.current.page += 1;
 
     setFetchMoreLoading(true);
 
@@ -243,9 +252,15 @@ const PostsPreviewer = ({
 
       if (newData) {
         setData((prev) => {
+          const oldPostsIDs = prev.posts.map((post) => post._id.toString());
+
+          const newPosts = newData.posts.filter(
+            (post) => !oldPostsIDs.includes(post._id.toString())
+          );
+
           return {
             isFinalPage: !!newData.isFinalPage,
-            posts: [...prev.posts, ...newData.posts],
+            posts: [...prev.posts, ...newPosts],
           };
         });
       } else {
@@ -315,8 +330,20 @@ const PostsPreviewer = ({
   if (!posts.length && error && !loading) {
     let ownerName = isCurrentUserProfile ? "your" : "this user";
 
-    if (mode === "homePage") ownerName = "home page";
-    if (mode === "singlePageInfoPage") ownerName = "this page";
+    switch (mode) {
+      case "homePage": {
+        ownerName = "home page";
+        break;
+      }
+      case "singlePageInfoPage": {
+        ownerName = "this page";
+        break;
+      }
+      case "singleGroupInfoPage": {
+        ownerName = "this group";
+        break;
+      }
+    }
 
     return (
       <IllustrationPage
@@ -333,22 +360,40 @@ const PostsPreviewer = ({
             </Button>
           ),
         }}
-        content={`Can't get ${ownerName} posts at the momment`}
+        content={
+          error?.graphQLErrors?.[0]?.message ||
+          `Can't get ${ownerName} posts at the momment`
+        }
       />
     );
   }
 
-  if (!posts.length && !error && !loading) {
+  if (
+    !posts.length &&
+    !error &&
+    !loading &&
+    !getPostsData?.[variables.methodName as keyof typeof getPostsData].posts
+      ?.length
+  ) {
     let message = isCurrentUserProfile
       ? "You don't have posts, add some posts to see it here"
       : "This user doesn't have any posts";
 
-    if (mode === "homePage")
-      message =
-        "There is no posts for you, follow some pages or join groups or get some friends to see there posts";
-
-    if (mode === "singlePageInfoPage")
-      message = "This page doesn't have any posts at this time";
+    switch (mode) {
+      case "homePage": {
+        message =
+          "There is no posts for you, follow some pages or join groups or get some friends to see there posts";
+        break;
+      }
+      case "singlePageInfoPage": {
+        message = "This page doesn't have any posts at this time";
+        break;
+      }
+      case "singleGroupInfoPage": {
+        message = "This group doesn't have any posts at this time";
+        break;
+      }
+    }
 
     return (
       <IllustrationPage
@@ -372,7 +417,9 @@ const PostsPreviewer = ({
           setStopFetchMore,
         };
 
-  if (mode === "singlePageInfoPage") postCardProps.normalUser = normalUser;
+  if (["singlePageInfoPage", "singleGroupInfoPage"].includes(mode)) {
+    postCardProps.normalUser = normalUser;
+  }
 
   return (
     <>
@@ -390,6 +437,20 @@ const PostsPreviewer = ({
           );
         })}
       </ul>
+
+      {!isFinalPage && (
+        <Button
+          onClick={handleFetchMore}
+          className="w-fit mx-auto mt-4"
+          disabled={fetchMoreLoading || loading}
+        >
+          {fetchMoreLoading ||
+          (stopFetchMore && isWantToFetch.current) ||
+          loading
+            ? "Loading..."
+            : "See more"}
+        </Button>
+      )}
 
       {(fetchMoreLoading || (stopFetchMore && isWantToFetch.current)) && (
         <Loading size={16} withText withFullHeight={false} />

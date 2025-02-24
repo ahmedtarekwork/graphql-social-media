@@ -77,12 +77,12 @@ const EditPostPage = () => {
 
   switch (oldPost?.community) {
     case "personal": {
-      hasAccess = data.getSinglePost.owner._id !== user!._id;
+      hasAccess = data?.getSinglePost?.owner?._id !== user!._id;
       break;
     }
     default: {
       hasAccess =
-        isUserAdmin || oldPost.communityInfo.owner.toString() === user?._id;
+        isUserAdmin || oldPost?.communityInfo?.owner?.toString() === user?._id;
       break;
     }
   }

@@ -38,10 +38,12 @@ const GET_SINGLE_PAGE = gql`
       profilePicture {
         secure_url
         public_id
+        _id
       }
       coverPicture {
         secure_url
         public_id
+        _id
       }
       followersCount
       owner {

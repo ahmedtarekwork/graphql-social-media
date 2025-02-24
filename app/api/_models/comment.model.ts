@@ -5,8 +5,8 @@ import reactionsSchema from "../_schemas/reactions.schema";
 
 const commentSchema = new Schema(
   {
-    post: { type: Types.ObjectId, ref: "Post" },
-    owner: { type: Types.ObjectId, ref: "User" },
+    post: { type: Types.ObjectId, ref: "Post", index: true },
+    owner: { type: Types.ObjectId, ref: "User", index: true },
     comment: String,
     reactions: {
       type: reactionsSchema,
@@ -41,14 +41,9 @@ const commentSchema = new Schema(
     communityId: {
       type: Types.ObjectId,
       ref: function () {
-        switch ((this as { community: string }).community) {
-          case "page": {
-            return "Page";
-          }
-          case "group": {
-            return "Group";
-          }
-        }
+        const community = (this as { community: string }).community;
+        if (community !== "personal")
+          return `${community[0].toUpperCase()}${community.slice(1)}`;
       },
     },
   },

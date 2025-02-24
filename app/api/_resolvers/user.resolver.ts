@@ -147,7 +147,7 @@ const userResolvers = {
             },
           ]);
 
-          return { count: count[0].notifications };
+          return { count: count?.[0]?.notifications || 0 };
         },
       }),
     getUserNotifications: async (

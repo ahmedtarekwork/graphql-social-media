@@ -1,9 +1,11 @@
 // react
-import { useContext, type ReactNode, type RefObject } from "react";
+import { type ReactNode, type RefObject } from "react";
 
 // components
 import FriendshipBtns from "@/app/(routes)/user/[userId]/components/FriendshipBtns";
 import TogglePageFollow from "../pages/TogglePageFollow";
+import JoinGroupBtns from "../groups/JoinGroupBtns";
+import GroupJoinRequestsList from "../groups/GroupJoinRequestsList";
 
 import PageAndGroupSettings, {
   type PageAndGroupSettingsProfileType,
@@ -14,11 +16,12 @@ import ProfileAndCoverPicture, {
   type ProfileAndCoverPictureRefType,
 } from "./ProfileAndCoverPicture";
 
-// contexts
-import { authContext } from "@/contexts/AuthContext";
-
 // shadcn
 import { Button } from "../ui/button";
+
+// icons
+import { IoIosPeople } from "react-icons/io";
+import { MdOutlineVpnLock } from "react-icons/md";
 
 // types
 import type {
@@ -45,6 +48,8 @@ type Props = {
       isUserAdminUpdateQuery?: never;
       normalUser?: never;
       isUserOwner?: never;
+      isMember?: never;
+      isUserMemberInGroupUpdateQuery?: never;
     }
   | {
       profileType: "page";
@@ -53,6 +58,8 @@ type Props = {
       isUserAdminUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
       normalUser: boolean;
       isUserOwner: boolean;
+      isMember?: never;
+      isUserMemberInGroupUpdateQuery?: never;
     }
   | {
       profileType: "group";
@@ -61,6 +68,8 @@ type Props = {
       isUserAdminUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
       normalUser: boolean;
       isUserOwner: boolean;
+      isMember: boolean;
+      isUserMemberInGroupUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
     }
 );
 
@@ -73,8 +82,9 @@ const ProfileTopInfo = ({
   isUserAdminUpdateQuery,
   normalUser,
   isUserOwner,
+  isMember,
+  isUserMemberInGroupUpdateQuery,
 }: Props) => {
-  const { user } = useContext(authContext);
   const isCurrentUserProfile = useIsCurrentUserProfile();
 
   const values: Record<"name" | "secondaryText", ReactNode> = {
@@ -109,7 +119,7 @@ const ProfileTopInfo = ({
         profileType,
         profileInfo,
         updateQuery,
-        normalUser: true,
+        normalUser,
       };
       break;
     }
@@ -126,16 +136,8 @@ const ProfileTopInfo = ({
         profileType,
         profileInfo,
         updateQuery,
-        normalUser: true,
+        normalUser,
       };
-      break;
-    }
-  }
-
-  switch (profileType) {
-    case "group":
-    case "page": {
-      profileAndCoverPictureProps.normalUser = normalUser;
       break;
     }
   }
@@ -165,6 +167,17 @@ const ProfileTopInfo = ({
               </p>
             ) : (
               values.secondaryText
+            )}
+
+            {profileType === "group" && (
+              <p className="flex items-center gap-2 flex-wrap text-gray-600 text-md truncate">
+                {profileInfo.privacy === "public" ? (
+                  <IoIosPeople size={20} className="!fill-primary" />
+                ) : (
+                  <MdOutlineVpnLock size={20} className="!fill-primary" />
+                )}{" "}
+                {profileInfo.privacy.replaceAll("_", " ")}
+              </p>
             )}
 
             {profileType === "personal" && (
@@ -206,26 +219,48 @@ const ProfileTopInfo = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap max-sm:mx-auto">
-          {profileType === "page" ? (
-            profileInfo.owner._id !== user?._id && <TogglePageFollow />
-          ) : (
-            <></>
+          {profileType === "page" && !isUserOwner && <TogglePageFollow />}
+
+          {profileType === "group" &&
+            !isUserOwner &&
+            !isMember &&
+            profileInfo.privacy === "public" && (
+              <JoinGroupBtns
+                isMember={isMember}
+                isUserMemberInGroupUpdateQuery={isUserMemberInGroupUpdateQuery}
+                groupPrivacy={profileInfo.privacy}
+              />
+            )}
+
+          {profileType === "group" && !isUserOwner && isMember && (
+            <JoinGroupBtns
+              isMember={isMember}
+              isUserMemberInGroupUpdateQuery={isUserMemberInGroupUpdateQuery}
+              groupPrivacy={profileInfo.privacy}
+            />
           )}
 
           {profileType !== "personal" && !normalUser && (
-            <PageAndGroupSettings
-              coverPictureRef={coverPictureRef}
-              profilePictureRef={profilePictureRef}
-              profile={
-                {
-                  profileType: profileType,
-                  profileInfo: profileAndCoverPictureProps.profileInfo,
-                  updateQuery,
-                } as PageAndGroupSettingsProfileType
-              }
-              isUserAdminUpdateQuery={isUserAdminUpdateQuery}
-              isUserOwner={isUserOwner}
-            />
+            <>
+              <PageAndGroupSettings
+                coverPictureRef={coverPictureRef}
+                profilePictureRef={profilePictureRef}
+                profile={
+                  {
+                    profileType,
+                    profileInfo,
+                    updateQuery,
+                  } as PageAndGroupSettingsProfileType
+                }
+                isUserAdminUpdateQuery={isUserAdminUpdateQuery}
+                isUserOwner={isUserOwner}
+              />
+
+              {profileType === "group" &&
+                profileInfo.privacy === "members_only" && (
+                  <GroupJoinRequestsList />
+                )}
+            </>
           )}
         </div>
       </div>

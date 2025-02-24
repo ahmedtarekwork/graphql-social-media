@@ -110,7 +110,7 @@ const postResolvers = {
 
                   {
                     $lookup: {
-                      from: "group",
+                      from: "groups",
                       localField: "communityId",
                       foreignField: "_id",
                       as: "groupCommunity",
@@ -1414,7 +1414,7 @@ const postResolvers = {
 
             default: {
               const isUserAdminInCommunity = (
-                await Page.aggregate([
+                await (post.community === "page" ? Page : Group).aggregate([
                   { $match: { _id: new Types.ObjectId(post.communityId._id) } },
 
                   {
@@ -1429,6 +1429,7 @@ const postResolvers = {
               )?.[0]?.isUserAdminInCommunity;
 
               hasAccess =
+                post.owner.toString() === user._id.toString() ||
                 isUserAdminInCommunity ||
                 post.communityId.owner.toString() === user._id.toString();
             }
@@ -1436,9 +1437,11 @@ const postResolvers = {
 
           if (!hasAccess) {
             throw new GraphQLError(
-              `${
-                post.community === "personal" ? "post" : post.community
-              } owner or admins can only delete this post`,
+              `post owner${
+                post.community !== "personal"
+                  ? ` or ${post.community} owner or admins`
+                  : ""
+              } can only delete this post`,
               {
                 extensions: { code: "FORBIDDEN" },
               }

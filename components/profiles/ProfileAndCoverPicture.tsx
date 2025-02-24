@@ -98,17 +98,27 @@ export type ProfileAndCoverPictureRefType = {
 
 const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
   ({ pictureType, profileType, profileInfo, updateQuery, normalUser }, ref) => {
-    const pageId = (useParams()?.pageId || "") as string;
-
     const { setUser } = useContext(authContext);
     const isCurrentUserProfile = useIsCurrentUserProfile();
 
-    const pictureName = `${pictureType}Picture` as keyof typeof profileInfo;
+    const capitalCommunityName = `${profileType[0].toUpperCase()}${profileType.slice(
+      1
+    )}`;
+
+    const params = useParams();
+
+    let queryName = "changeUserData";
+
+    if (profileType !== "personal") queryName = `edit${capitalCommunityName}`;
+
+    const pictureName = `${pictureType}Picture` as keyof Pick<
+      typeof profileInfo,
+      "profilePicture" | "coverPicture"
+    >;
 
     let hasAccessToChangePicture = false;
     let NoProfilePictureIcon = BsPersonPlusFill;
     let NoProfilePictureIconWithoutAccess = IoMdPerson;
-    let query: DocumentNode;
 
     const UPDATE_PERSONAL_PICTURE = gql`
       mutation ChangeUserData($newUserData: ChangeUserDataInput!) {
@@ -120,16 +130,9 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
         }
       }
     `;
-    const UPDATE_PAGE_PICTURE = gql`
-      mutation ChangePageInfo($editPageData: EditPageInput!) {
-        editPage(editPageData: $editPageData) {
-          message
-        }
-      }
-    `;
-    const UPDATE_GROUP_PICTURE = gql`
-      mutation ChangePageInfo($editGroupData: EditGroupInput!) {
-        editGroup(editGroupData: $editGroupData) {
+    const UPDATE_COMMUNITY_PICTURE = gql`
+      mutation Change${capitalCommunityName}Info($${queryName}Data: Edit${capitalCommunityName}Input!) {
+        ${queryName}(${queryName}Data: $${queryName}Data) {
           message
         }
       }
@@ -138,8 +141,6 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
     switch (profileType) {
       case "personal": {
         if (isCurrentUserProfile) hasAccessToChangePicture = true;
-        query = UPDATE_PERSONAL_PICTURE;
-
         break;
       }
       case "page": {
@@ -149,8 +150,6 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
           NoProfilePictureIconWithoutAccess = FaFlag;
           NoProfilePictureIcon = TbFlagPlus;
         }
-
-        query = UPDATE_PAGE_PICTURE;
         break;
       }
       case "group": {
@@ -160,71 +159,83 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
           NoProfilePictureIconWithoutAccess = TiGroup;
           NoProfilePictureIcon = RiImageAddFill;
         }
-
-        query = UPDATE_GROUP_PICTURE;
-
         break;
       }
     }
 
     const [uploadProfileOrCoverPicture, { loading: updatePictureLoading }] =
-      useMutation(query, {
-        onCompleted(data, options) {
-          const newValues = options?.variables?.editPageData;
+      useMutation(
+        profileType === "personal"
+          ? UPDATE_PERSONAL_PICTURE
+          : UPDATE_COMMUNITY_PICTURE,
+        {
+          onCompleted(data, options) {
+            switch (profileType) {
+              case "personal": {
+                const newPicture = data?.changeUserData?.[pictureName];
 
-          switch (profileType) {
-            case "personal": {
-              const newPicture = data?.changeUserData?.[pictureName];
-
-              if (newPicture) {
-                setUser((prev) => ({
-                  ...(prev as unknown as UserType),
-                  [pictureName]: {
-                    public_id: newPicture.public_id,
-                    secure_url: newPicture.secure_url,
-                  },
-                }));
-              }
-              break;
-            }
-
-            case "group":
-            case "page": {
-              const queryName =
-                profileType === "group" ? "getSingleGroup" : "getPageInfo";
-
-              updateQuery((prev) => {
-                return {
-                  ...prev!,
-                  [queryName]: {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ...(prev as any)?.[queryName],
+                if (newPicture) {
+                  setUser((prev) => ({
+                    ...(prev as unknown as UserType),
                     [pictureName]: {
-                      public_id: newValues[pictureName].public_id,
-                      secure_url: newValues[pictureName].secure_url,
+                      ...(prev as unknown as UserType)?.[pictureName],
+                      public_id: newPicture.public_id,
+                      secure_url: newPicture.secure_url,
                     },
-                  },
-                };
-              });
-              break;
+                  }));
+                }
+                break;
+              }
+
+              case "group":
+              case "page": {
+                const newValues = options?.variables?.[`${queryName}Data`];
+
+                const getProfileInfoQueryName =
+                  profileType === "group" ? "getSingleGroup" : "getPageInfo";
+
+                updateQuery((prev) => {
+                  return {
+                    ...prev!,
+                    [getProfileInfoQueryName]: {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      ...(prev as any)?.[getProfileInfoQueryName],
+                      [pictureName]: {
+                        ...(prev as any)?.[getProfileInfoQueryName]?.[
+                          pictureName
+                        ],
+                        public_id: newValues[pictureName].public_id,
+                        secure_url: newValues[pictureName].secure_url,
+                        // _id: newValues[pictureName]._id,
+                      },
+                    },
+                  };
+                });
+                break;
+              }
             }
-          }
 
-          setNewPicture(null);
-          if (mode !== "firstTime") setMode("firstTime");
+            setNewPicture(null);
+            if (mode !== "firstTime") setMode("firstTime");
 
-          toast.success(`${pictureType} picture uploaded successfully`, {
-            duration: 9000,
-          });
-        },
-        onError({ graphQLErrors }) {
-          toast.error(
-            graphQLErrors?.[0]?.message ||
-              `something went wrong while uploading your new ${pictureType} picture`,
-            { duration: 9000 }
-          );
-        },
-      });
+            toast.success(`${pictureType} picture uploaded successfully`, {
+              duration: 9000,
+            });
+          },
+          onError(error) {
+            console.log(error);
+            // { graphQLErrors }
+
+            toast.error(
+              // graphQLErrors?.[0]?.message ||
+              `something went wrong while uploading ${
+                profileType === "personal" ? "your" : profileType
+              } new ${pictureType} picture`,
+              { duration: 9000 }
+            );
+          },
+        }
+      );
 
     const [newPicture, setNewPicture] = useState<File | null>(null);
     const [disableBtns, setDisableBtns] = useState(false);
@@ -294,18 +305,13 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                         };
                         break;
                       }
+
+                      case "group":
                       case "page": {
                         variables = {
-                          editPageData: {
-                            pageId,
-                            [pictureName]: newImg[0],
-                          },
-                        };
-                        break;
-                      }
-                      case "group": {
-                        variables = {
-                          newUserData: {
+                          [`${queryName}Data`]: {
+                            [`${profileType}Id`]:
+                              params?.[`${profileType}Id`] || "",
                             [pictureName]: newImg[0],
                           },
                         };

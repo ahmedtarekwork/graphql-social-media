@@ -47,6 +47,7 @@ import en from "javascript-time-ago/locale/en";
 
 // SVGs
 import _404 from "/public/illustrations/404.svg";
+import notificationSVG from "/public/illustrations/notifications.svg";
 
 type Props = {
   setOpenDialog: Dispatch<SetStateAction<boolean>>;
@@ -248,8 +249,22 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
           />
         )}
 
-        {!notifications.length && !error && !loading && (
-          <b>You don{"'"}t have any notifications.</b>
+        {!notifications?.length && !error && !loading && (
+          <IllustrationPage
+            svg={notificationSVG}
+            content="You don't have any notifications."
+            btn={{
+              type: "custom",
+              component: (
+                <Button
+                  className="mx-auto"
+                  onClick={() => setOpenDialog(false)}
+                >
+                  close
+                </Button>
+              ),
+            }}
+          />
         )}
 
         {!!notifications.length && !error && !loading && (

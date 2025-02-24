@@ -142,6 +142,7 @@ const DisplayPostShares = ({
 
       <DialogContent
         aria-describedby={`post-${postId}-shares`}
+        className="overflow-auto"
         onScroll={(e) => {
           const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
           const isBottom = scrollTop + clientHeight >= scrollHeight;

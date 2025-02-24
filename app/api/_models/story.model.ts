@@ -6,7 +6,7 @@ import reactionsSchema from "../_schemas/reactions.schema";
 const storySchema = new Schema(
   {
     caption: { type: String },
-    owner: { type: Types.ObjectId, ref: "User" },
+    owner: { type: Types.ObjectId, ref: "User", index: true },
     reactions: {
       type: reactionsSchema,
       default: {

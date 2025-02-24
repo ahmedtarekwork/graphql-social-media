@@ -28,26 +28,37 @@ import { toast } from "sonner";
 // gql
 import { gql, useMutation } from "@apollo/client";
 
-const ADD_NEW_ADMIN_TO_PAGE = gql`
-  mutation AddNewAdminToPage($toggleAdminData: PageAdminInput!) {
-    togglePageAdmin(toggleAdminData: $toggleAdminData) {
-      message
-    }
-  }
-`;
+type Props = {
+  type: "page" | "group";
+};
 
-const AddNewAdminBtn = () => {
-  const pageId = (useParams()?.pageId || "") as string;
+const AddNewAdminBtn = ({ type }: Props) => {
+  const ADD_NEW_ADMIN_TO_COMMUNITY = gql`
+    mutation AddNewAdminTo${type[0].toUpperCase()}${type.slice(
+    1
+  )}($toggleAdminData: ${
+    type === "page" ? "PageAdminInput" : "ToggleGroupAdminInput"
+  }!) {
+      toggle${type[0].toUpperCase()}${type.slice(
+    1
+  )}Admin(toggleAdminData: $toggleAdminData) {
+        message
+      }
+    }
+  `;
+
+  const params = useParams();
 
   const newAdminIdInputRef = useRef<HTMLInputElement>(null);
 
   const [open, setOpen] = useState(false);
 
-  const [addNewAdmin, { loading }] = useMutation(ADD_NEW_ADMIN_TO_PAGE, {
+  const [addNewAdmin, { loading }] = useMutation(ADD_NEW_ADMIN_TO_COMMUNITY, {
     onCompleted(data) {
       setOpen(false);
       toast.success(
-        data?.togglePageAdmin?.message || "admin added successfully"
+        data?.[`toggle${type[0].toUpperCase()}${type.slice(1)}Admin`]
+          ?.message || "admin added successfully"
       );
     },
     onError({ graphQLErrors }) {
@@ -59,6 +70,7 @@ const AddNewAdminBtn = () => {
 
   const handleAddNewAdmin = () => {
     if (loading) return;
+
     const adminId = newAdminIdInputRef.current?.value;
 
     if (!adminId || !Types.ObjectId.isValid(adminId)) {
@@ -73,7 +85,7 @@ const AddNewAdminBtn = () => {
       variables: {
         toggleAdminData: {
           newAdminId: adminId,
-          pageId,
+          [`${type}Id`]: params?.[`${type}Id`] || "",
           toggle: "add",
         },
       },

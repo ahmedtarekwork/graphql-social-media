@@ -30,11 +30,7 @@ type ProfileType =
       updateQuery?: never;
     }
   | {
-      profileType: "page";
-      updateQuery: ReturnTypeOfUseQuery["updateQuery"];
-    }
-  | {
-      profileType: "group";
+      profileType: "page" | "group";
       updateQuery: ReturnTypeOfUseQuery["updateQuery"];
     };
 
@@ -49,7 +45,15 @@ const SettingSlice = ({
   profileType,
   updateQuery,
 }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
+  const capitalCommunityName = `${profileType[0].toUpperCase()}${profileType.slice(
+    1
+  )}`;
+
+  const params = useParams();
+
+  let queryName = "changeUserData";
+
+  if (profileType !== "personal") queryName = `edit${capitalCommunityName}`;
 
   const { setUser } = useContext(authContext);
   const [activeInput, setActiveInput] = useState(false);
@@ -57,96 +61,82 @@ const SettingSlice = ({
 
   const UPDATE_USER_INFO = gql`
     mutation ChangeUserData($newUserData: ChangeUserDataInput!) {
-      changeUserData(newUserData: $newUserData) {
+      ${queryName}(newUserData: $newUserData) {
         ${settingName}
       }
     }
   `;
-  const UPDATE_PAGE_INFO = gql`
-    mutation ChangePageInfo($editPageData: EditPageInput!) {
-      editPage(editPageData: $editPageData) {
+  const UPDATE_COMMUNITY_INFO = gql`
+    mutation Change${capitalCommunityName}Info($${queryName}Data: Edit${capitalCommunityName}Input!) {
+      ${queryName}(${queryName}Data: $${queryName}Data) {
         message
       }
     }
   `;
 
-  let query: DocumentNode;
-  let queryName: string;
+  const [updateProfileInfo, { loading }] = useMutation(
+    profileType === "personal" ? UPDATE_USER_INFO : UPDATE_COMMUNITY_INFO,
+    {
+      onCompleted(data, options) {
+        if (data?.[queryName]) {
+          const newInfo = data?.[queryName]?.[settingName];
 
-  switch (profileType) {
-    case "personal": {
-      query = UPDATE_USER_INFO;
-      queryName = "changeUserData";
-      break;
-    }
-    case "page": {
-      query = UPDATE_PAGE_INFO;
-      queryName = "editPage";
-      break;
-    }
-    case "group": {
-      query = UPDATE_PAGE_INFO;
-      break;
-    }
-  }
-
-  const [updateProfileInfo, { loading }] = useMutation(query, {
-    onCompleted(data, options) {
-      if (data?.[queryName]) {
-        const newInfo = data?.[queryName]?.[settingName];
-
-        const newValues =
-          options?.variables?.[profileType === "page" ? "editPageData" : ""];
-
-        switch (profileType) {
-          case "personal": {
-            setUser((prev) => ({
-              ...prev!,
-              [settingName]: newInfo,
-            }));
-            break;
-          }
-          case "page": {
-            updateQuery?.((prev) => {
-              return {
+          switch (profileType) {
+            case "personal": {
+              setUser((prev) => ({
                 ...prev!,
-                getPageInfo: {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  ...(prev as any)!.getPageInfo,
-                  [settingName]: newValues[settingName],
-                },
-              };
-            });
-            break;
+                [settingName]: newInfo,
+              }));
+              break;
+            }
+            case "group":
+            case "page": {
+              updateQuery?.((prev) => {
+                const newValues = options?.variables?.[`${queryName}Data`];
+
+                const getProfileInfoQueryName =
+                  profileType === "page" ? "getPageInfo" : "getSingleGroup";
+
+                return {
+                  ...prev!,
+                  [getProfileInfoQueryName]: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ...(prev as any)?.[getProfileInfoQueryName],
+                    [settingName]: newValues[settingName],
+                  },
+                };
+              });
+              break;
+            }
           }
+
+          setActiveInput(false);
         }
 
-        setActiveInput(false);
-      }
-
-      toast.success(
-        profileType === "personal"
-          ? "your profile updated successfully"
-          : "info updated successfully",
-        { duration: 9000 }
-      );
-    },
-    onError({ graphQLErrors }) {
-      toast.error(
-        graphQLErrors?.[0]?.message ||
-          `something went wrong while updating ${
-            profileType === "personal" ? "your " : ""
-          }${settingName}`,
-        {
-          duration: 9000,
-        }
-      );
-    },
-  });
+        toast.success(
+          profileType === "personal"
+            ? "your profile updated successfully"
+            : "info updated successfully",
+          { duration: 9000 }
+        );
+      },
+      onError({ graphQLErrors }) {
+        toast.error(
+          graphQLErrors?.[0]?.message ||
+            `something went wrong while updating ${
+              profileType === "personal" ? "your " : profileType
+            }${settingName}`,
+          {
+            duration: 9000,
+          }
+        );
+      },
+    }
+  );
 
   return (
-    <div className="flex flex-wrap justify-between gap-1.5 items-center bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2 text-left">
-      <div>
+    <div className="flex flex-wrap justify-between gap-1.5 items-end bg-primary bg-opacity-10 rounded-md border-l-4 border-primary p-2 text-left">
+      <div className="flex-1">
         <p>
           change {profileType === "personal" ? "your " : ""}
           {settingName}
@@ -155,7 +145,7 @@ const SettingSlice = ({
           <Input
             type={settingName === "email" ? "email" : "text"}
             defaultValue={settingValue}
-            className="bg-white"
+            className="bg-white w-full"
             ref={newValueInputRef}
             disabled={loading}
           />
@@ -195,16 +185,15 @@ const SettingSlice = ({
                   };
                   break;
                 }
+                case "group":
                 case "page": {
                   variables = {
-                    editPageData: { pageId, [settingName]: newValue },
+                    [`${queryName}Data`]: {
+                      [`${profileType}Id`]: params?.[`${profileType}Id`] || "",
+                      [settingName]: newValue,
+                    },
                   };
                   break;
-                }
-                default: {
-                  variables = {
-                    newUserData: { [settingName]: newValue },
-                  };
                 }
               }
 

@@ -39,7 +39,7 @@ type Props = {
 const RemovePictureSlice = ({ pictureType, profile }: Props) => {
   const { profileType, updateQuery, profileInfo } = profile;
 
-  const pageId = (useParams()?.pageId || "") as string;
+  const params = useParams();
 
   const pictureName = `${pictureType}Picture`;
 
@@ -52,70 +52,64 @@ const RemovePictureSlice = ({ pictureType, profile }: Props) => {
       }
     }
   `;
-  const REMOVE_PAGE_PICTURE = gql`
-    mutation RemovePagePicture($removePictureInfo: RemovePictureInfoInput!) {
+  const REMOVE_COMMUNIT_PIYCTURE = gql`
+  mutation RemovePagePicture($removePictureInfo: ${
+    profileType === "group"
+      ? "RemoveGroupPictureInfoInput"
+      : "RemovePictureInfoInput"
+  }!) {
       removePageProfileOrCoverPicture(removePictureInfo: $removePictureInfo) {
         message
       }
     }
   `;
 
-  let query: DocumentNode;
-
-  switch (profileType) {
-    case "personal": {
-      query = REMOVE_USER_PICTURE;
-      break;
-    }
-    case "page": {
-      query = REMOVE_PAGE_PICTURE;
-      break;
-    }
-    case "group": {
-      query = REMOVE_PAGE_PICTURE;
-      break;
-    }
-  }
-
-  const [removePicture, { loading }] = useMutation(query, {
-    onCompleted() {
-      switch (profileType) {
-        case "personal": {
-          setUser((prev) => ({ ...prev!, [`${pictureType}Picture`]: null }));
-          break;
+  const [removePicture, { loading }] = useMutation(
+    profileType === "personal" ? REMOVE_USER_PICTURE : REMOVE_COMMUNIT_PIYCTURE,
+    {
+      onCompleted() {
+        switch (profileType) {
+          case "personal": {
+            setUser((prev) => ({ ...prev!, [`${pictureType}Picture`]: null }));
+            break;
+          }
+          case "group":
+          case "page": {
+            updateQuery?.((prev) => ({
+              ...prev!,
+              [profileType === "group" ? "getSingleGroup" : "getPageInfo"]: {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ...(prev as any)?.[
+                  profileType === "group" ? "getSingleGroup" : "getPageInfo"
+                ],
+                [pictureName]: null,
+              },
+            }));
+            break;
+          }
         }
-        case "page": {
-          updateQuery?.((prev) => ({
-            ...prev!,
-            getPageInfo: {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ...(prev as any)!.getPageInfo,
-              [pictureName]: null,
-            },
-          }));
-          break;
-        }
-      }
 
-      toast.success(
-        `${
-          profileType === "personal" ? "your" : profileType
-        } ${pictureType} picture removed successfully`,
-        {
-          duration: 8000,
-        }
-      );
-    },
+        toast.success(
+          `${
+            profileType === "personal" ? "your" : profileType
+          } ${pictureType} picture removed successfully`,
+          {
+            duration: 8000,
+          }
+        );
+      },
 
-    onError({ graphQLErrors }) {
-      let message = `something went wrong while removing ${
-        profileType === "personal" ? "your" : profileType
-      } ${pictureType} picture`;
-      if (graphQLErrors.length) message = graphQLErrors[0].message;
-
-      toast.error(message, { duration: 8000 });
-    },
-  });
+      onError({ graphQLErrors }) {
+        toast.error(
+          graphQLErrors?.[0]?.message ||
+            `something went wrong while removing ${
+              profileType === "personal" ? "your" : profileType
+            } ${pictureType} picture`,
+          { duration: 8000 }
+        );
+      },
+    }
+  );
 
   return (
     <div className="red-setting-slice">
@@ -152,24 +146,16 @@ const RemovePictureSlice = ({ pictureType, profile }: Props) => {
               onClick={() => {
                 let variables: Record<string, unknown>;
 
-                switch (profileType) {
-                  case "personal": {
-                    variables = { pictureType };
-                    break;
-                  }
-                  case "page": {
-                    variables = {
-                      removePictureInfo: {
-                        pageId,
-                        pictureType,
-                      },
-                    };
-                    break;
-                  }
-                  case "group": {
-                    variables = { pictureType };
-                    break;
-                  }
+                if (profileType === "personal") {
+                  variables = { pictureType };
+                } else {
+                  variables = {
+                    removePictureInfo: {
+                      [`${profileType}Id`]: (params?.[`${profileType}Id`] ||
+                        "") as string,
+                      pictureType,
+                    },
+                  };
                 }
 
                 removePicture({

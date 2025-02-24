@@ -1,6 +1,3 @@
-// nextjs
-import { useParams } from "next/navigation";
-
 // react
 import {
   useState,
@@ -20,8 +17,8 @@ import ProfileSettings from "./ProfileSettings";
 import AdminsList from "./admins/AdminsList";
 import AddNewAdminBtn from "./admins/AddNewAdminBtn";
 import SettingSlice from "@/app/(routes)/user/[userId]/components/SettingSlice";
-import DisclaimerFromPageBtn from "./dangerZone/DisclaimerFromPageBtn";
-import DeletePageBtn from "./dangerZone/DeletePageBtn";
+import DisclaimerFromCommunityBtn from "./dangerZone/DisclaimerFromCommunityBtn";
+import DeleteCommunityBtn from "./dangerZone/DeleteCommunityBtn";
 
 // shadcn
 import {
@@ -49,12 +46,12 @@ export type PageAndGroupSettingsProfileType = {
   | {
       profileType: "page";
       profileInfo: PageType;
-      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // page info
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // update page info
     }
   | {
       profileType: "group";
       profileInfo: GroupType;
-      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // group info
+      updateQuery: ReturnTypeOfUseQuery["updateQuery"]; // update group info
     }
 );
 
@@ -74,15 +71,10 @@ const PageAndGroupSettings = ({
   isUserAdminUpdateQuery,
   isUserOwner,
 }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
+  const { profileType, profileInfo, updateQuery } = profile;
 
   const { user } = useContext(authContext);
   const [openSettings, setOpenSettings] = useState(false);
-
-  const settingsSliceProps =
-    profile.profileType === "page"
-      ? { profileType: "page" as const, pageId }
-      : { profileType: "group" as const, groupId: "" };
 
   return (
     <Dialog open={openSettings} onOpenChange={setOpenSettings}>
@@ -96,23 +88,21 @@ const PageAndGroupSettings = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="mb-4 text-center underline underline-offset-[7px] text-primary capitalize">
-            {profile.profileType} settings
+            {profileType} settings
           </DialogTitle>
 
           <VisuallyHidden>
-            <DialogDescription>
-              {profile.profileType} settings list
-            </DialogDescription>
+            <DialogDescription>{profileType} settings list</DialogDescription>
           </VisuallyHidden>
 
           <div className="space-y-2">
             <h3 className="text-secondary text-left font-bold underline ">
-              {profile.profileType} admins
+              {profileType} admins
             </h3>
 
             <div className="setting-slice">
               add new admin
-              <AddNewAdminBtn />
+              <AddNewAdminBtn type={profileType} />
             </div>
 
             <div className="setting-slice">
@@ -126,7 +116,7 @@ const PageAndGroupSettings = ({
                 </Button>
 
                 <AdminsList
-                  profileType={profile.profileType}
+                  profileType={profileType}
                   isUserOwner={isUserOwner}
                 />
               </Dialog>
@@ -136,28 +126,29 @@ const PageAndGroupSettings = ({
           <ProfileSettings
             profilePictureRef={profilePictureRef}
             coverPictureRef={coverPictureRef}
-            profile={profile}
+            profile={{ ...profile, setOpenSettings }}
           />
 
           <SettingSlice
-            {...settingsSliceProps}
-            updateQuery={profile.updateQuery}
+            profileType={profileType}
+            updateQuery={updateQuery}
             settingName="name"
-            settingValue={profile.profileInfo.name}
+            settingValue={profileInfo.name}
           />
 
           <div className="danger-zone">
             <h3 className="danger-zone-title">Danger Zone</h3>
 
-            {user?._id === profile.profileInfo.owner._id ? (
+            {user?._id === profileInfo.owner._id ? (
               <div className="red-setting-slice">
-                delete {profile.profileType}
-                <DeletePageBtn />
+                delete {profileType}
+                <DeleteCommunityBtn />
               </div>
             ) : (
               <div className="red-setting-slice">
-                disclaimer from {profile.profileType}
-                <DisclaimerFromPageBtn
+                disclaimer from {profileType}
+                <DisclaimerFromCommunityBtn
+                  profileType={profileType}
                   isUserAdminUpdateQuery={isUserAdminUpdateQuery}
                 />
               </div>

@@ -9,7 +9,6 @@ import "./globals.css";
 import ApolloContext from "@/contexts/ApolloContext";
 import AuthContext from "@/contexts/AuthContext";
 import UserNotificationsCountContext from "@/contexts/UserNotificationsCountContext";
-// import PostsProvider from "@/contexts/PostsContext";
 
 // utils
 import { Toaster } from "sonner";
@@ -57,11 +56,9 @@ export default function RootLayout({
                 <Sidebar />
               </SidebarProvider>
 
-              {/* <PostsProvider> */}
               <main className="flex-1 flex flex-col container my-4">
                 {children}
               </main>
-              {/* </PostsProvider> */}
             </UserNotificationsCountContext>
 
             <Footer />

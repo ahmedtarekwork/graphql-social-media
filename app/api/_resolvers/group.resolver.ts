@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import User from "../_models/user.model";
 import Post from "../_models/post.model";
 import Group from "../_models/group.model";
+import Comment from "../_models/comment.model";
 
 // types
 import type {
@@ -18,6 +19,7 @@ import type {
   Pagination,
   PostType,
   GroupInputDataType,
+  ImageType,
 } from "@/lib/types";
 
 const groupResolvers = {
@@ -320,7 +322,8 @@ const groupResolvers = {
       return await handleConnectDB({
         publicErrorMsg: "something went wrong while getting group info",
         async resolveCallback() {
-          const group = (await Group.findById(groupId))?._doc;
+          const group = (await Group.findById(groupId).select("-joinRequests"))
+            ?._doc;
 
           if (!group) {
             throw new GraphQLError("group with given id not found", {
@@ -377,7 +380,7 @@ const groupResolvers = {
           )?.[0]?.isUserAdminInGroup;
 
           if (
-            !isUserAdminInGroup ||
+            !isUserAdminInGroup &&
             user._id.toString() !== group.owner.toString()
           ) {
             throw new GraphQLError("you don't have access to this data", {
@@ -394,7 +397,6 @@ const groupResolvers = {
               },
             },
             { $unwind: "$joinRequests" },
-
             {
               $lookup: {
                 from: "users",
@@ -406,24 +408,37 @@ const groupResolvers = {
                 as: "joinRequests.user",
               },
             },
-
             { $unwind: "$joinRequests.user" },
-            { $replaceRoot: { newRoot: "$joinRequests" } },
+            {
+              $addFields: {
+                "joinRequests.user": {
+                  _id: "$joinRequests.user._id",
+                  username: "$joinRequests.user.username",
+                  profilePicture: "$joinRequests.user.profilePicture",
+                },
+              },
+            },
+            {
+              $replaceRoot: {
+                newRoot: "$joinRequests",
+              },
+            },
             {
               $facet: {
                 data: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+                totalCount: [{ $group: { _id: null, count: { $sum: 1 } } }],
               },
             },
             {
               $project: {
                 data: 1,
-                totalCount: 1,
+                totalCount: { $arrayElemAt: ["$totalCount.count", 0] },
               },
             },
           ]);
 
-          const joinRequests = result[0]?.data || [];
-          const totalCount = result[0]?.totalCount || 0;
+          const joinRequests = result?.[0]?.data || [];
+          const totalCount = result?.[0]?.totalCount || 0;
 
           return {
             requests: joinRequests,
@@ -507,12 +522,12 @@ const groupResolvers = {
                 : false;
 
             if (
-              !isUserMemberInGroup ||
-              !isUserAdminInGroup ||
+              !isUserMemberInGroup &&
+              !isUserAdminInGroup &&
               groupDoc.owner.toString() !== user._id.toString()
             ) {
               throw new GraphQLError(
-                "you must be a owner or member or admin in this group to see it's posts"
+                "you must be an owner or member or admin in this group to see it's posts"
               );
             }
           }
@@ -841,6 +856,121 @@ const groupResolvers = {
           };
         },
       }),
+
+    isUserSentJoinRequest: async (
+      _: unknown,
+      { groupId }: { groupId: string },
+      { req }: APIContextFnType
+    ) =>
+      await handleConnectDB({
+        validateToken: true,
+        req,
+        publicErrorMsg:
+          "something went wrong while asking if you were sent a join request to this this group or not",
+        async resolveCallback(user) {
+          if (!groupId) {
+            throw new GraphQLError("group id is required", {
+              extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+            });
+          }
+
+          if (!(await Group.exists({ _id: groupId }))) {
+            throw new GraphQLError("group with given id not found", {
+              extensions: { code: "NOT_FOUND" },
+            });
+          }
+
+          const isUserSentJoinRequest = await Group.aggregate([
+            { $match: { _id: new Types.ObjectId(groupId) } },
+            {
+              $project: {
+                isUserSentJoinRequest: {
+                  $in: [new Types.ObjectId(user._id), "$joinRequests.user"],
+                },
+              },
+            },
+            { $match: { isUserSentJoinRequest: true } },
+          ]);
+
+          return {
+            isUserSentJoinRequest:
+              !!isUserSentJoinRequest?.[0]?.isUserSentJoinRequest,
+          };
+        },
+      }),
+
+    joinRequestsCount: async (
+      _: unknown,
+      { groupId }: { groupId: string },
+      { req }: APIContextFnType
+    ) =>
+      await handleConnectDB({
+        validateToken: true,
+        req,
+        publicErrorMsg:
+          "something went wrong while getting group join request count",
+        async resolveCallback(user) {
+          if (!groupId) {
+            throw new GraphQLError("group id is required", {
+              extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+            });
+          }
+
+          const group = (await Group.findById(groupId).select("privacy owner"))
+            ?._doc;
+
+          if (!group) {
+            throw new GraphQLError("group with given id not found", {
+              extensions: { code: "NOT_FOUND" },
+            });
+          }
+
+          const isUserAdminInGroup = (
+            await Group.aggregate([
+              { $match: { _id: new Types.ObjectId(groupId) } },
+              {
+                $project: {
+                  isUserAdminInGroup: {
+                    $in: [new Types.ObjectId(user._id), "$admins"],
+                  },
+                },
+              },
+              { $match: { isUserAdminInGroup: true } },
+            ])
+          )?.[0]?.isUserAdminInGroup;
+
+          if (
+            group.owner.toString() !== user._id.toString() &&
+            !isUserAdminInGroup
+          ) {
+            throw new GraphQLError(
+              "group owner or admin only can access group join requests count",
+              { extensions: { code: "FORBIDDEN" } }
+            );
+          }
+
+          if (group.privacy === "pulblic") {
+            throw new GraphQLError("group with given id is public", {
+              extensions: { code: ApolloServerErrorCode.BAD_REQUEST },
+            });
+          }
+
+          const JoinRequestsCount = await Group.aggregate([
+            { $match: { _id: new Types.ObjectId(groupId) } },
+            {
+              $project: {
+                JoinRequestsCount: {
+                  $size: "$joinRequests",
+                },
+              },
+            },
+          ]);
+
+          return {
+            count: JoinRequestsCount?.[0]?.JoinRequestsCount || 0,
+          };
+        },
+      }),
   },
 
   Mutation: {
@@ -877,7 +1007,7 @@ const groupResolvers = {
             { _id: user._id },
             {
               $push: {
-                ownedGroups: group._id,
+                ownedGroups: group._id.toString(),
               },
             }
           );
@@ -935,7 +1065,7 @@ const groupResolvers = {
             ])
           )?.[0]?.isUserAdminInGroup;
 
-          if (group.owner.toString() !== user._id || !isUserAdminInGroup) {
+          if (group.owner.toString() !== user._id && !isUserAdminInGroup) {
             throw new GraphQLError(
               "group owner or admins can only edit group info",
               {
@@ -957,6 +1087,114 @@ const groupResolvers = {
         },
       });
     },
+
+    removePageProfileOrCoverPicture: async (
+      _: unknown,
+      {
+        removePictureInfo: { pictureType, groupId },
+      }: {
+        removePictureInfo: {
+          pictureType: "profile" | "cover";
+          groupId: string;
+        };
+      },
+      { req }: APIContextFnType
+    ) =>
+      await handleConnectDB({
+        validateToken: true,
+        req,
+        publicErrorMsg: `something went wrong while remove group ${pictureType} picture`,
+        async resolveCallback(user) {
+          const pictureName = `${pictureType}Picture`;
+
+          if (!groupId) {
+            throw new GraphQLError("group id is required", {
+              extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+            });
+          }
+
+          if (!pictureType) {
+            throw new GraphQLError(
+              "you must select one of cover or profile pictures to delete one of them",
+              {
+                extensions: { code: ApolloServerErrorCode.BAD_USER_INPUT },
+              }
+            );
+          }
+
+          const group = await Group.findById(groupId).select(
+            `owner ${pictureName}`
+          );
+
+          if (!group) {
+            throw new GraphQLError("group with given id not found", {
+              extensions: { code: "NOT_FOUND" },
+            });
+          }
+
+          const isUserAdminInGroup = (
+            await Group.aggregate([
+              { $match: { _id: new Types.ObjectId(groupId) } },
+              {
+                $project: {
+                  isUserAdminInGroup: {
+                    $in: [new Types.ObjectId(user._id), "$admins"],
+                  },
+                },
+              },
+              { $match: { isUserAdminInGroup: true } },
+            ])
+          )?.[0]?.isUserAdminInGroup;
+
+          if (
+            group.owner.toString() !== user._id.toString() &&
+            !isUserAdminInGroup
+          ) {
+            throw new GraphQLError(
+              `group owner or admins can only remove group ${pictureType} picture`,
+              { extensions: { code: "FORBIDDEN" } }
+            );
+          }
+
+          const pictureId = (
+            group[
+              `${pictureType}Picture` as keyof typeof user
+            ] as ImageType | null
+          )?.public_id;
+
+          if (!pictureId) {
+            throw new GraphQLError(
+              `this group dosen't have ${pictureType} picture to remove it`,
+              {
+                extensions: { code: ApolloServerErrorCode.BAD_REQUEST },
+              }
+            );
+          }
+
+          try {
+            await deleteMedia([pictureId]);
+
+            await Group.updateOne(
+              { _id: groupId },
+              { $set: { [pictureName]: null } }
+            );
+
+            return {
+              message: `group ${pictureType} picture removed successfully`,
+            };
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          } catch (_) {
+            throw new GraphQLError(
+              `something went wrong while removing group ${pictureType} picture`,
+              {
+                extensions: {
+                  code: ApolloServerErrorCode.INTERNAL_SERVER_ERROR,
+                },
+              }
+            );
+          }
+        },
+      }),
 
     deleteGroup: async (
       _: unknown,
@@ -1038,15 +1276,15 @@ const groupResolvers = {
     toggleGroupAdmin: async (
       _: unknown,
       {
-        toggleGroupAdminData: { adminId, groupId, toggle },
+        toggleAdminData: { newAdminId, groupId, toggle },
       }: {
-        toggleGroupAdminData: Record<"adminId" | "groupId", string> & {
+        toggleAdminData: Record<"newAdminId" | "groupId", string> & {
           toggle: "add" | "remove";
         };
       },
       { req }: APIContextFnType
     ) => {
-      if (!groupId || !adminId) {
+      if (!groupId || !newAdminId) {
         throw new GraphQLError(
           `${!groupId ? "group" : "admin"} id is required`,
           {
@@ -1064,6 +1302,8 @@ const groupResolvers = {
         async resolveCallback(user) {
           const group = (await Group.findById(groupId).select("owner"))?._doc;
 
+          let removeMySelf = false;
+
           if (!group) {
             throw new GraphQLError("group with given id not found", {
               extensions: { code: "NOT_FOUND" },
@@ -1076,7 +1316,7 @@ const groupResolvers = {
               {
                 $project: {
                   isUserAdminInGroup: {
-                    $in: [new Types.ObjectId(user._id), "$admins"],
+                    $in: [new Types.ObjectId(newAdminId), "$admins"],
                   },
                 },
               },
@@ -1085,32 +1325,32 @@ const groupResolvers = {
           )?.[0]?.isUserAdminInGroup;
 
           if (
-            adminId === user._id &&
-            isUserAdminInGroup &&
-            toggle === "remove"
+            !(
+              newAdminId === user._id &&
+              isUserAdminInGroup &&
+              toggle === "remove"
+            ) &&
+            group.owner.toString() !== user._id
           ) {
-            await Group.updateOne(
-              { _id: groupId },
-              { $pull: { admins: adminId } }
-            );
-
-            return {
-              message: "you have been left from admins list of the group",
-            };
-          }
-
-          if (adminId === user._id && group.owner.toString() === user._id) {
-            throw new GraphQLError(
-              "you can't remove your self from group admins because you are the owner"
-            );
-          }
-
-          if (group.owner.toString() !== user._id) {
             throw new GraphQLError(
               "group owner can only modify admins list of the group",
               {
                 extensions: { code: "FORBIDDEN" },
               }
+            );
+          }
+
+          if (
+            newAdminId === user._id &&
+            isUserAdminInGroup &&
+            toggle === "remove"
+          ) {
+            removeMySelf = true;
+          }
+
+          if (newAdminId === user._id && group.owner.toString() === user._id) {
+            throw new GraphQLError(
+              "you can't add or remove your self from group admins because you are the owner"
             );
           }
 
@@ -1131,13 +1371,13 @@ const groupResolvers = {
             { _id: groupId },
             {
               [`$${isUserAdminInGroup ? "pull" : "push"}`]: {
-                admins: adminId,
+                admins: newAdminId,
               },
             }
           );
 
           await User.updateOne(
-            { _id: adminId },
+            { _id: newAdminId },
             {
               [`$${isUserAdminInGroup ? "pull" : "push"}`]: {
                 adminGroup: groupId,
@@ -1146,9 +1386,11 @@ const groupResolvers = {
           );
 
           return {
-            message: `admin ${
-              isUserAdminInGroup ? "removed from" : "added to"
-            } the group successfully`,
+            message: removeMySelf
+              ? "you have been left from admins list of the group"
+              : `admin ${
+                  isUserAdminInGroup ? "removed from" : "added to"
+                } the group successfully`,
           };
         },
       });
@@ -1201,12 +1443,21 @@ const groupResolvers = {
           }
 
           if (group.privacy === "members_only") {
-            await Group.updateOne({ _id: groupId }, { joinRequests: user._id });
+            await Group.updateOne(
+              { _id: groupId },
+              {
+                $push: {
+                  joinRequests: {
+                    user: user._id,
+                  },
+                },
+              }
+            );
 
             const notification = {
               content: `${user._id} sent a request to join ${group.name} group`,
               icon: "group",
-              url: `/groups/${group._id}`,
+              url: `/groups/${group._id.toString()}`,
             };
 
             const groupAdminsIDs =
@@ -1305,15 +1556,55 @@ const groupResolvers = {
             );
           }
 
-          const updatedUserData = {
-            $pull: { joinedGroups: groupId },
-          } as Record<string, unknown>;
+          await User.updateOne(
+            { _id: user._id },
+            { $pull: { joinedGroups: groupId } }
+          ); // exit user from group
 
-          await User.updateOne({ _id: user._id }, updatedUserData); // exit user from group
+          const postsMediaAndIDs = await Post.find({
+            owner: user._id,
+            communityId: group._id.toString(),
+          }).select("media");
 
-          // TODO: REMOVE POSTS MEDIA
-          // TODO: REMOVE USER POSTS COMMENTS + MEDIA
-          // TODO: REMOVE USER ITSELF COMMENTS TO OTHER USERS POSTS + MEDIA
+          const myPostsCommentsMediaPromise = Comment.find({
+            communityId: group._id.toString(),
+            post: { $in: postsMediaAndIDs.map((post) => post._id.toString()) },
+          }).select("media");
+
+          const myCommentsOnOtherMembersPostsPromise = Comment.find({
+            communityId: group._id.toString(),
+            owner: user._id,
+            post: {
+              $not: {
+                $in: postsMediaAndIDs.map((post) => post._id.toString()),
+              },
+            },
+          }).select("media post");
+
+          const [myPostsCommentsMediaRes, myCommentsOnOtherMembersPostsRes] =
+            await Promise.allSettled([
+              myPostsCommentsMediaPromise,
+              myCommentsOnOtherMembersPostsPromise,
+            ]);
+          const myPostsCommentsMedia =
+            myPostsCommentsMediaRes.status === "fulfilled"
+              ? myPostsCommentsMediaRes.value
+              : [];
+          const myCommentsOnOtherMembersPosts =
+            myCommentsOnOtherMembersPostsRes.status === "fulfilled"
+              ? myCommentsOnOtherMembersPostsRes.value
+              : [];
+
+          const deleteAllMedia = deleteMedia([
+            ...postsMediaAndIDs
+              .map((post) => post.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+            ...[...myPostsCommentsMedia, ...myCommentsOnOtherMembersPosts]
+              .map((comment) => comment.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+          ]);
 
           const updateGroupMembersCount = Group.updateOne(
             { _id: groupId },
@@ -1326,13 +1617,57 @@ const groupResolvers = {
 
           const removeUserProstsFromGroup = Post.deleteMany({
             owner: user._id,
-            communityId: group._id,
+            communityId: group._id.toString(),
+          });
+
+          const removeComments = Comment.deleteMany({
+            $or: [
+              {
+                communityId: group._id.toString(),
+                post: {
+                  $in: postsMediaAndIDs.map((post) => post._id.toString()),
+                },
+              },
+              {
+                communityId: group._id.toString(),
+                owner: user._id,
+              },
+            ],
           });
 
           await Promise.allSettled([
+            removeComments,
             updateGroupMembersCount,
             removeUserProstsFromGroup,
+            deleteAllMedia,
           ]);
+
+          const commentsCount = await Comment.aggregate([
+            {
+              $match: {
+                post: {
+                  $in: myCommentsOnOtherMembersPosts.map(
+                    (comment) => new Types.ObjectId(comment.post)
+                  ),
+                },
+              },
+            },
+            {
+              $group: {
+                _id: "$post",
+                count: { $sum: 1 },
+              },
+            },
+          ]);
+
+          const bulkOps = commentsCount.map((item) => ({
+            updateOne: {
+              filter: { _id: item._id },
+              update: { $set: { commentsCount: item.count } },
+            },
+          }));
+
+          await Post.bulkWrite(bulkOps);
 
           return {
             message: "you are successfully exit from the group",
@@ -1344,8 +1679,8 @@ const groupResolvers = {
     expulsingFromTheGroup: async (
       _: unknown,
       {
-        explusionFromGroupData: { groupId, memberId },
-      }: { explusionFromGroupData: Record<"memberId" | "groupId", string> },
+        expulsingFromGroupData: { groupId, memberId },
+      }: { expulsingFromGroupData: Record<"memberId" | "groupId", string> },
       { req }: APIContextFnType
     ) => {
       if (!groupId || !memberId) {
@@ -1397,18 +1732,18 @@ const groupResolvers = {
           }
 
           const isMemberIsActuallyMemberInGroup = (
-            await Group.aggregate([
-              { $match: { _id: new Types.ObjectId(groupId) } },
+            await User.aggregate([
+              { $match: { _id: new Types.ObjectId(memberId) } },
               {
                 $project: {
-                  isUserAdminInGroup: {
-                    $in: [new Types.ObjectId(user._id), "$admins"],
+                  isMemberIsActuallyMemberInGroup: {
+                    $in: [new Types.ObjectId(groupId), "$joinedGroups"],
                   },
                 },
               },
-              { $match: { isUserAdminInGroup: true } },
+              { $match: { isMemberIsActuallyMemberInGroup: true } },
             ])
-          )?.[0]?.isUserAdminInGroup;
+          )?.[0]?.isMemberIsActuallyMemberInGroup;
 
           if (!isMemberIsActuallyMemberInGroup) {
             throw new GraphQLError("user isn't a member in the group", {
@@ -1421,14 +1756,14 @@ const groupResolvers = {
               { $match: { _id: new Types.ObjectId(groupId) } },
               {
                 $project: {
-                  isUserAdminInGroup: {
-                    $in: [new Types.ObjectId(user._id), "$admins"],
+                  isMemberAdminInGroup: {
+                    $in: [new Types.ObjectId(memberId), "$admins"],
                   },
                 },
               },
-              { $match: { isUserAdminInGroup: true } },
+              { $match: { isMemberAdminInGroup: true } },
             ])
-          )?.[0]?.isUserAdminInGroup;
+          )?.[0]?.isMemberAdminInGroup;
 
           if (isMemberAdminInGroup && group.owner.toString() !== user._id) {
             throw new GraphQLError(
@@ -1439,7 +1774,7 @@ const groupResolvers = {
             );
           }
 
-          if (group.owner.toString() === user._id) {
+          if (group.owner.toString() === user._id && user._id === memberId) {
             throw new GraphQLError(
               "you can't expulsing your self from the group because you are the owner"
             );
@@ -1447,6 +1782,12 @@ const groupResolvers = {
 
           const updatedUserData = {
             $pull: { joinedGroups: groupId },
+            $push: {
+              notifications: {
+                icon: "group",
+                caption: `you have been expulsing from ${group.name} Group by one of the group admins`,
+              },
+            },
           } as Record<string, unknown>;
 
           if (isMemberAdminInGroup) {
@@ -1456,11 +1797,52 @@ const groupResolvers = {
             };
           }
 
-          await User.updateOne({ _id: memberId }, updatedUserData); // expulsing user from group
+          await User.updateOne({ _id: memberId }, updatedUserData); // expulsing member from group
 
-          // TODO: REMOVE MEMBER POSTS Media
-          // TODO: REMOVE MEMBER POSTS OTHER USERS COMMENTS + COMMENTS Media
-          // TODO: REMOVE MEMBER HIMSELF COMMENTS + COMMENTS Media
+          const postsMediaAndIDs = await Post.find({
+            owner: memberId,
+            communityId: group._id.toString(),
+          }).select("media");
+
+          const myPostsCommentsMediaPromise = Comment.find({
+            communityId: group._id.toString(),
+            post: { $in: postsMediaAndIDs.map((post) => post._id.toString()) },
+          }).select("media");
+
+          const myCommentsOnOtherMembersPostsPromise = Comment.find({
+            communityId: group._id.toString(),
+            owner: memberId,
+            post: {
+              $not: {
+                $in: postsMediaAndIDs.map((post) => post._id.toString()),
+              },
+            },
+          }).select("media post");
+
+          const [myPostsCommentsMediaRes, myCommentsOnOtherMembersPostsRes] =
+            await Promise.allSettled([
+              myPostsCommentsMediaPromise,
+              myCommentsOnOtherMembersPostsPromise,
+            ]);
+          const myPostsCommentsMedia =
+            myPostsCommentsMediaRes.status === "fulfilled"
+              ? myPostsCommentsMediaRes.value
+              : [];
+          const myCommentsOnOtherMembersPosts =
+            myCommentsOnOtherMembersPostsRes.status === "fulfilled"
+              ? myCommentsOnOtherMembersPostsRes.value
+              : [];
+
+          const deleteAllMedia = deleteMedia([
+            ...postsMediaAndIDs
+              .map((post) => post.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+            ...[...myPostsCommentsMedia, ...myCommentsOnOtherMembersPosts]
+              .map((comment) => comment.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+          ]);
 
           const updateGroupMembersCount = Group.updateOne(
             { _id: groupId },
@@ -1470,31 +1852,63 @@ const groupResolvers = {
               },
             }
           );
+
           const removeUserProstsFromGroup = Post.deleteMany({
             owner: memberId,
-            communityId: groupId,
+            communityId: group._id.toString(),
           });
 
-          const sendNotificationToMember = User.updateOne(
-            { _id: memberId },
-            {
-              $push: {
-                notifications: {
-                  icon: "group",
-                  caption: `you have been expulsing from ${group.name} Group by one of the group admins`,
+          const removeComments = Comment.deleteMany({
+            $or: [
+              {
+                communityId: group._id.toString(),
+                post: {
+                  $in: postsMediaAndIDs.map((post) => post._id.toString()),
                 },
               },
-            }
-          );
+              {
+                communityId: group._id.toString(),
+                owner: memberId,
+              },
+            ],
+          });
 
           await Promise.allSettled([
+            removeComments,
             updateGroupMembersCount,
             removeUserProstsFromGroup,
-            sendNotificationToMember,
+            deleteAllMedia,
           ]);
 
+          const commentsCount = await Comment.aggregate([
+            {
+              $match: {
+                post: {
+                  $in: myCommentsOnOtherMembersPosts.map(
+                    (comment) => new Types.ObjectId(comment.post)
+                  ),
+                },
+              },
+            },
+            {
+              $group: {
+                _id: "$post",
+                count: { $sum: 1 },
+              },
+            },
+          ]);
+
+          const bulkOps = commentsCount.map((item) => ({
+            updateOne: {
+              filter: { _id: item._id },
+              update: { $set: { commentsCount: item.count } },
+            },
+          }));
+
+          await Post.bulkWrite(bulkOps);
+
           return {
-            message: "you are successfully expulsing the member from the group",
+            message: "you are successfully expulsed this member from the group",
           };
         },
       });
@@ -1503,19 +1917,24 @@ const groupResolvers = {
     handleGroupRequest: async (
       _: unknown,
       {
-        handleGroupRequestData: { acception, requestId },
+        handleGroupRequestData: { acception, requestId, groupId, senderId },
       }: {
         handleGroupRequestData: {
           acception: boolean;
           requestId: string;
+          groupId: string;
+          senderId: string;
         };
       },
       { req }: APIContextFnType
     ) => {
-      if (!requestId) {
-        throw new GraphQLError("request id is required", {
-          extensions: { code: ApolloServerErrorCode.BAD_REQUEST },
-        });
+      if (!requestId || !groupId) {
+        throw new GraphQLError(
+          `${!groupId ? "group" : "request"} id is required`,
+          {
+            extensions: { code: ApolloServerErrorCode.BAD_REQUEST },
+          }
+        );
       }
 
       if (typeof acception !== "boolean") {
@@ -1529,11 +1948,7 @@ const groupResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while handle join request",
         async resolveCallback(user) {
-          const group = (
-            await Group.findOne({ $elemMatch: { _id: requestId } }).select(
-              "owner"
-            )
-          )?._doc;
+          const group = (await Group.findById(groupId).select("owner"))?._doc;
 
           if (!group) {
             throw new GraphQLError(
@@ -1568,22 +1983,22 @@ const groupResolvers = {
 
           if (acception) {
             await User.updateOne(
-              { _id: user._id },
+              { _id: senderId },
               {
                 $push: {
-                  joinedGroups: group._id,
+                  joinedGroups: group._id.toString(),
                 },
               }
             );
           }
 
           const newGroupInfo: Record<string, unknown> = {
-            $pull: { joinRequests: requestId },
+            $pull: { joinRequests: { _id: requestId } },
           };
 
           if (acception) newGroupInfo.$inc = { membersCount: 1 };
 
-          await Group.updateOne({ _id: group._id }, newGroupInfo);
+          await Group.updateOne({ _id: groupId }, newGroupInfo);
 
           return {
             message: acception

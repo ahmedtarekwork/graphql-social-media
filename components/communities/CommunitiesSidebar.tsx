@@ -27,13 +27,19 @@ import { FaHandBackFist, FaHeartCircleCheck } from "react-icons/fa6";
 import { RiAdminFill } from "react-icons/ri";
 import { MdExplore, MdFiberNew } from "react-icons/md";
 import { FaBars } from "react-icons/fa";
+import classNames from "classnames";
 
 type Props = {
+  CommunitiesType: CommunitiesType;
   setCommunitiesType: Dispatch<SetStateAction<CommunitiesType>>;
   mode: "pages" | "groups";
 };
 
-const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
+const CommunitiesSidebar = ({
+  CommunitiesType,
+  setCommunitiesType,
+  mode,
+}: Props) => {
   const { isMobile, toggleSidebar } = useSidebar();
 
   const sidebarItems: {
@@ -52,8 +58,8 @@ const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
       Icon: RiAdminFill,
     },
     {
-      content: `followed ${mode}`,
-      type: "followed",
+      content: `${mode === "groups" ? "joined" : "followed"} ${mode}`,
+      type: `${mode === "groups" ? "joined" : "followed"}`,
       Icon: FaHeartCircleCheck,
     },
     {
@@ -65,12 +71,12 @@ const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
 
   return (
     <>
-      {/* {isMobile && ( */}
-      <Button onClick={toggleSidebar} className="mb-3">
-        <FaBars />
-        other {mode}
-      </Button>
-      {/* // )} */}
+      {isMobile && (
+        <Button onClick={toggleSidebar} className="mb-2">
+          <FaBars />
+          other {mode}
+        </Button>
+      )}
 
       <SidebarElement id="communities-sidebar">
         {isMobile && (
@@ -91,10 +97,13 @@ const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
                 {sidebarItems.map(({ Icon, content, type }) => (
                   <SidebarMenuItem key={type}>
                     <Button
-                      className="w-full !py-6 flex justify-start"
+                      className={classNames(
+                        "w-full !py-6 flex justify-start",
+                        CommunitiesType === type ? "bg-secondary" : ""
+                      )}
                       onClick={() => {
                         setCommunitiesType(type);
-                        toggleSidebar();
+                        if (isMobile) toggleSidebar();
                       }}
                     >
                       <Icon size={22} />
@@ -108,7 +117,7 @@ const CommunitiesSidebar = ({ setCommunitiesType, mode }: Props) => {
                     <Link
                       href={`/${mode}/new`}
                       className="w-full !py-6 flex !justify-start"
-                      onClick={toggleSidebar}
+                      onClick={() => (isMobile ? toggleSidebar() : null)}
                     >
                       <MdFiberNew size={22} />
                       create new {mode.replace("s", "")}

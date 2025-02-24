@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 // types
 import { type InsideProfileType } from "./PostCard";
-import { PostType } from "@/lib/types";
+import type { PostType } from "@/lib/types";
 
 type Props = {
   postId: string;
@@ -126,7 +126,7 @@ const SavePostBtn = ({
 
   return (
     <DropdownMenuItem
-      className="cursor-pointer text-sm text-primary flex flex-wrap gap-1.5 items-center outline-none px-2 py-1.5 rounded-sm hover:bg-muted transition duration-200 save-post-to-bookmarks-btn"
+      className="cursor-pointer text-sm hover:!text-primary !text-primary hover:!bg-primary hover:!bg-opacity-20 flex flex-wrap gap-1.5 items-center outline-none px-2 py-1.5 rounded-sm transition duration-200 save-post-to-bookmarks-btn"
       onClick={(e) => {
         const isDisabled = Object.keys(e.currentTarget.dataset).includes(
           "disabled"

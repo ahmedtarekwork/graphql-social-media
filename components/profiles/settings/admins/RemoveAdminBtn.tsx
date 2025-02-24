@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import classNames from "classnames";
 
 // types
-import type { ReturnTypeOfUseQuery, UserType } from "@/lib/types";
+import type { NotFullUserType, ReturnTypeOfUseQuery } from "@/lib/types";
 
 type Props = {
   adminsListUpdateQuery: ReturnTypeOfUseQuery["updateQuery"];
@@ -47,15 +47,8 @@ type Props = {
   pageAndLimit: MutableRefObject<Record<"page" | "limit" | "skip", number>>;
   fetchMoreLoading: boolean;
   setStopFetchMore: Dispatch<SetStateAction<boolean>>;
+  profileType: "page" | "group";
 };
-
-const DISCLAIMER_FROM_PAGE = gql`
-  mutation RemoveAdminFromPage($toggleAdminData: PageAdminInput!) {
-    togglePageAdmin(toggleAdminData: $toggleAdminData) {
-      message
-    }
-  }
-`;
 
 const RemoveAdminBtn = ({
   adminsListUpdateQuery,
@@ -64,59 +57,84 @@ const RemoveAdminBtn = ({
   pageAndLimit,
   fetchMoreLoading,
   setStopFetchMore,
+  profileType,
 }: Props) => {
-  const pageId = (useParams()?.pageId || "") as string;
+  const params = useParams();
+  const queryName = `toggle${profileType[0].toUpperCase()}${profileType.slice(
+    1
+  )}Admin`;
+
+  const DISCLAIMER_FROM_COMMUNITY = gql`
+   mutation RemoveAdminFrom${profileType[0].toUpperCase()}${profileType.slice(
+    1
+  )}($toggleAdminData: ${
+    profileType === "page" ? "PageAdminInput" : "ToggleGroupAdminInput"
+  }!) {
+      ${queryName}(toggleAdminData: $toggleAdminData) {
+        message
+      }
+    }
+  `;
 
   const isWaitForDelete = useRef(false);
 
   const [waitForFetchMore, setWaitForFetchMore] = useState(false);
 
-  const [removeAdminFromPage, { loading }] = useMutation(DISCLAIMER_FROM_PAGE, {
-    variables: {
-      toggleAdminData: {
-        newAdminId: userId,
-        pageId,
-        toggle: "remove",
+  const [removeAdminFromCommunity, { loading }] = useMutation(
+    DISCLAIMER_FROM_COMMUNITY,
+    {
+      variables: {
+        toggleAdminData: {
+          newAdminId: userId,
+          [`${profileType}Id`]: params[`${profileType}Id`],
+          toggle: "remove",
+        },
       },
-    },
 
-    onCompleted(data) {
-      if (pageAndLimit.current) pageAndLimit.current.skip -= 1;
+      onCompleted(data) {
+        if (pageAndLimit.current) pageAndLimit.current.skip -= 1;
 
-      adminsListUpdateQuery((prev) => {
-        return {
-          ...prev!,
-          getPageAdminsList: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ...(prev as any)!.getPageAdminsList,
-            admins:
+        adminsListUpdateQuery((prev) => {
+          const getAdminsQueryName = `get${profileType[0].toUpperCase()}${profileType.slice(
+            1
+          )}AdminsList`;
+
+          return {
+            ...prev!,
+            [getAdminsQueryName]: {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ((prev as any)!.getPageAdminsList.admins || []).filter(
-                (admin: UserType) => admin._id.toString() !== userId.toString()
-              ),
-          },
-        };
-      });
+              ...(prev as any)?.[getAdminsQueryName],
+              admins:
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ((prev as any)?.[getAdminsQueryName]?.admins || []).filter(
+                  (admin: NotFullUserType) =>
+                    admin._id.toString() !== userId.toString()
+                ),
+            },
+          };
+        });
 
-      setStopFetchMore(false);
+        setStopFetchMore(false);
 
-      toast.success(
-        data?.togglePageAdmin?.message || "admin removed from page successfully"
-      );
-    },
-    onError({ graphQLErrors }) {
-      setStopFetchMore(false);
+        toast.success(
+          data?.[queryName]?.message ||
+            `admin removed from ${profileType} successfully`
+        );
+      },
+      onError({ graphQLErrors }) {
+        setStopFetchMore(false);
 
-      toast.error(
-        graphQLErrors?.[0]?.message ||
-          "can't disclaimer from page at the momment"
-      );
-    },
-  });
+        toast.error(
+          graphQLErrors?.[0]?.message ||
+            `can't disclaimer from ${profileType} at the momment`
+        );
+      },
+    }
+  );
 
   useEffect(() => {
     if (!fetchMoreLoading && isWaitForDelete.current) {
-      removeAdminFromPage();
+      removeAdminFromCommunity();
       isWaitForDelete.current = false;
       setWaitForFetchMore(false);
     }
@@ -140,8 +158,8 @@ const RemoveAdminBtn = ({
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently remove this
-            admin from this page admins list, you can add this admin at any time
-            if you want.
+            admin from this {profileType} admins list, you can add this admin at
+            any time if you want.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -152,7 +170,7 @@ const RemoveAdminBtn = ({
             className="red-btn"
             disabled={loading || waitForFetchMore}
             onClick={() => {
-              if (!fetchMoreLoading) removeAdminFromPage();
+              if (!fetchMoreLoading) removeAdminFromCommunity();
               else {
                 isWaitForDelete.current = true;
                 setWaitForFetchMore(true);

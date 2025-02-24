@@ -53,6 +53,7 @@ const ProfileSettings = ({
             id="change-profile-picture-from-settings"
             onChange={(e) => {
               const picture = e.target.files?.[0];
+
               if (picture) {
                 profilePictureRef.current?.setNewPicture(picture);
                 if (profileInfo.profilePicture)

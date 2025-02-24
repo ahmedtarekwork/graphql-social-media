@@ -34,6 +34,14 @@ const pageTypeDefs = gql`
     ): SuccessResponseType!
   }
 
+  type NotFullPage {
+    _id: ID!
+    name: String!
+    profilePicture: ImageType
+    followersCount: Int!
+    owner: String
+  }
+
   type GetPagesResponse {
     pages: [NotFullPage]!
     isFinalPage: Boolean!

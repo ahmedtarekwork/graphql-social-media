@@ -64,7 +64,7 @@ const UserCard = (props: Props) => {
             width={cardMode === "ROW" ? 90 : 150}
             height={cardMode === "ROW" ? 90 : 150}
             priority
-            className="w-full aspect-[1]"
+            className="w-full aspect-[1] object-cover"
           />
         ) : (
           <div

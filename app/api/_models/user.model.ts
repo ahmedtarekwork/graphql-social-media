@@ -45,24 +45,24 @@ const userSchema = new Schema(
     notifications: { type: [notificationSchema], default: [] },
 
     friendsRequests: {
-      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      type: [{ type: Schema.Types.ObjectId, ref: "User", index: true }],
       default: [],
     },
 
     friendsList: {
-      type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+      type: [{ type: Schema.Types.ObjectId, ref: "User", index: true }],
       default: [],
     },
 
     savedPosts: {
-      type: [{ type: Types.ObjectId, ref: "Post" }],
+      type: [{ type: Types.ObjectId, ref: "Post", index: true }],
       default: [],
     },
 
     allPosts: {
       type: [
         {
-          post: { type: Types.ObjectId, ref: "Post" },
+          post: { type: Types.ObjectId, ref: "Post", index: true },
           shareDate: {
             type: Date,
             default: Date.now(),
@@ -83,28 +83,28 @@ const userSchema = new Schema(
     },
 
     sharedPosts: {
-      type: [{ type: Types.ObjectId, ref: "Post" }],
+      type: [{ type: Types.ObjectId, ref: "Post", index: true }],
       default: [],
     },
 
-    ownedPages: [{ type: Types.ObjectId, ref: "Page" }],
-    adminPages: [{ type: Types.ObjectId, ref: "Page" }],
+    ownedPages: [{ type: Types.ObjectId, ref: "Page", index: true }],
+    adminPages: [{ type: Types.ObjectId, ref: "Page", index: true }],
 
     followedPages: {
-      type: [{ type: Types.ObjectId, ref: "Page" }],
+      type: [{ type: Types.ObjectId, ref: "Page", index: true }],
       default: [],
     },
 
     joinedGroups: {
-      type: [{ type: Types.ObjectId, ref: "Group" }],
+      type: [{ type: Types.ObjectId, ref: "Group", index: true }],
       default: [],
     },
     adminGroups: {
-      type: [{ type: Types.ObjectId, ref: "Group" }],
+      type: [{ type: Types.ObjectId, ref: "Group", index: true }],
       default: [],
     },
     ownedGroups: {
-      type: [{ type: Types.ObjectId, ref: "Group" }],
+      type: [{ type: Types.ObjectId, ref: "Group", index: true }],
       default: [],
     },
   },

@@ -27,9 +27,8 @@ import IllustrationPage, {
 } from "@/components/IllustrationPage";
 
 // types
-import { type CommunitiesType } from "../../app/(routes)/pages/page";
 import type { StaticImport } from "next/dist/shared/lib/get-img-props";
-import type { GroupType, PageType } from "@/lib/types";
+import type { CommunitiesType, GroupType, PageType } from "@/lib/types";
 
 // SVGs
 import errorLaptopSVG from "/public/illustrations/error-laptop.svg";
@@ -166,7 +165,7 @@ const DisplayCommunities = ({
         btn = {
           type: "custom",
           component: (
-            <Button asChild>
+            <Button asChild className="block w-fit mx-auto">
               <Link href={`/${pluralCommunityName}/new`}>
                 <MdFiberNew />
                 create a {mode}
@@ -176,15 +175,17 @@ const DisplayCommunities = ({
         };
         break;
       }
+      case "joined":
       case "followed": {
-        message = `you don't ${
-          mode === "page" ? "follow" : "joined"
-        } any ${pluralCommunityName}`;
+        message = `you don't ${CommunitiesType} any ${pluralCommunityName}`;
         SVG = followSVG;
         btn = {
           type: "custom",
           component: (
-            <Button onClick={() => setCommunitiesType("explore")}>
+            <Button
+              className="mx-auto"
+              onClick={() => setCommunitiesType("explore")}
+            >
               <MdExplore />
               explore {pluralCommunityName}
             </Button>

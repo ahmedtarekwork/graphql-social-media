@@ -11,7 +11,12 @@ export type NotFullUserType = Pick<UserType, "_id" | "username"> & {
   profilePicture: Pick<ImageType, "secure_url"> | null;
 };
 
-export type CommunitiesType = "owned" | "admin" | "followed" | "explore";
+export type CommunitiesType =
+  | "owned"
+  | "admin"
+  | "followed"
+  | "explore"
+  | "joined";
 
 export type GroupInputDataType = Pick<
   GroupType,
@@ -127,7 +132,7 @@ export type ReactionsType = Record<
 export type APIContextFnType = {
   req: NextRequest;
 };
-export type ImageType = Record<"public_id" | "secure_url", string>;
+export type ImageType = Record<"public_id" | "secure_url" | "_id", string>;
 
 export type Pagination<
   T extends Record<string, unknown> | undefined = Record<string, unknown>

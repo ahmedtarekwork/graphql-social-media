@@ -51,13 +51,13 @@ const commentTypeDefs = gql`
   }
 
   input AddCommentInput {
-    postId: String!
+    postId: ID!
     comment: String
     media: [ImageInput!]
   }
 
   input EditCommentInput {
-    commentId: String!
+    commentId: ID!
     comment: String
     media: [ImageInput!]
   }
