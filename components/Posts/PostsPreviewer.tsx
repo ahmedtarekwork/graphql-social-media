@@ -237,7 +237,12 @@ const PostsPreviewer = ({
     if (isFinalPage || loading || fetchMoreLoading || stopFetchMore || error)
       return;
 
-    if (posts.length) pageAndLimit.current.page += 1;
+    if (
+      getPostsData?.[variables.methodName as keyof typeof getPostsData]?.posts
+        ?.length ||
+      posts.length
+    )
+      pageAndLimit.current.page += 1;
 
     setFetchMoreLoading(true);
 

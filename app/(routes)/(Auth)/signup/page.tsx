@@ -155,6 +155,7 @@ const SignupPage = () => {
 
         registerUser(finalUploadData);
         return;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         toast.error("can't upload your image at the momment");
         return;

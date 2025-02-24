@@ -223,6 +223,7 @@ const postResolvers = {
               (post: PostType & Record<string, unknown>) => {
                 const communityInfo = {} as Record<string, unknown>;
 
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 let data: any;
                 if (post.community === "page") data = post.pageCommunity;
                 else if (post.community === "group") data = post.groupCommunity;
@@ -273,7 +274,13 @@ const postResolvers = {
                   {
                     $project: {
                       userPostsCount: {
-                        $size: "$allPosts",
+                        $size: {
+                          $filter: {
+                            input: "$allPosts",
+                            as: "post",
+                            cond: { $eq: ["$$post.community", "personal"] },
+                          },
+                        },
                       },
                     },
                   },
@@ -500,7 +507,13 @@ const postResolvers = {
                   {
                     $project: {
                       userPostsCount: {
-                        $size: "$allPosts",
+                        $size: {
+                          $filter: {
+                            input: "$allPosts",
+                            as: "post",
+                            cond: { $eq: ["$$post.community", "personal"] },
+                          },
+                        },
                       },
                     },
                   },
@@ -789,6 +802,7 @@ const postResolvers = {
             isInBookMark: !!result?.[0]?.isInBookMark?.[0]?.isInBookMark,
             shareDate: (post as unknown as { createdAt: string }).createdAt,
             communityInfo: post.communityId,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             communityId: (post.communityId as any)?._id,
           };
         },
@@ -1114,27 +1128,68 @@ const postResolvers = {
         publicErrorMsg: "something went wrong while add the post",
         async resolveCallback(user) {
           switch (postData.community) {
-            // case "group": {
-            //   if (!(await Group.exists({ _id: postData.communityId }))) {
-            //     throw new GraphQLError("group with given id not found", {
-            //       extensions: { code: "NOT_FOUND" },
-            //     });
-            //   }
+            case "group": {
+              const group = (
+                await Group.findOne({ _id: postData.communityId }).select(
+                  "owner"
+                )
+              )?._doc;
+              if (!group) {
+                throw new GraphQLError("group with given id not found", {
+                  extensions: { code: "NOT_FOUND" },
+                });
+              }
 
-            //   const isMemberOrOwner = (
-            //     [
-            //       user.joinedGroups,
-            //       user.ownedGroups,
-            //     ] as unknown as (typeof Types.ObjectId)[]
-            //   ).some((id) => id.toString() === postData.communityId);
+              const isUserMemberInGroupPromise = User.aggregate([
+                { $match: { _id: new Types.ObjectId(user._id) } },
+                {
+                  $project: {
+                    isUserMemberInGroup: {
+                      $in: [new Types.ObjectId(group._id), "$joinedGroups"],
+                    },
+                  },
+                },
+                { $match: { isUserMemberInGroup: true } },
+              ]);
 
-            //   if (!isMemberOrOwner) {
-            //     throw new GraphQLError(
-            //       "you must be a member in the group to post in it",
-            //       { extensions: { code: "FORBIDDEN" } }
-            //     );
-            //   }
-            // }
+              const isUserAdminInGroupPromise = Group.aggregate([
+                { $match: { _id: new Types.ObjectId(group._id) } },
+                {
+                  $project: {
+                    isUserAdminInGroup: {
+                      $in: [new Types.ObjectId(user._id), "$admins"],
+                    },
+                  },
+                },
+                { $match: { isUserAdminInGroup: true } },
+              ]);
+
+              const [isUserAdminInGroupRes, isUserMemberInGroupRes] =
+                await Promise.allSettled([
+                  isUserMemberInGroupPromise,
+                  isUserAdminInGroupPromise,
+                ]);
+
+              const isUserAdminInGroup =
+                isUserAdminInGroupRes.status === "fulfilled"
+                  ? isUserAdminInGroupRes.value?.[0]?.isUserAdminInGroup
+                  : [];
+              const isUserMemberInGroup =
+                isUserMemberInGroupRes.status === "fulfilled"
+                  ? isUserMemberInGroupRes.value?.[0]?.isUserMemberInGroup
+                  : [];
+
+              if (
+                !isUserAdminInGroup &&
+                !isUserMemberInGroup &&
+                user._id.toString() !== group.owner.toString()
+              ) {
+                throw new GraphQLError(
+                  "you must be a member in the group to post in it",
+                  { extensions: { code: "FORBIDDEN" } }
+                );
+              }
+            }
 
             case "page": {
               const page = (

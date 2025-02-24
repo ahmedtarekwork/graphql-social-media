@@ -343,7 +343,7 @@ const PostCard = ({
                 {community === "group" &&
                 !normalUser &&
                 ownerId.toString() !== user?._id.toString() ? (
-                  <DropdownMenuItem className="0">
+                  <DropdownMenuItem className="p-0">
                     <AlertDialogTrigger
                       className={
                         "px-2 py-1.5 rounded-sm cursor-pointer flex flex-wrap gap-1.5 items-center hover:!text-orange-600 !text-orange-600 hover:!bg-orange-600 hover:!bg-opacity-20 transition duration-200"

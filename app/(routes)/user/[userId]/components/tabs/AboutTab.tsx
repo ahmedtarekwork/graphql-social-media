@@ -29,21 +29,11 @@ const AboutTab = ({ profileOwner }: Props) => {
       <li>
         username: <b className="text-secondary">{profileOwner.username}</b>
       </li>
+
       <li>
         email: <b className="text-secondary">{profileOwner.email}</b>
       </li>
-      <li>
-        followed pages:{" "}
-        <b className="text-secondary">
-          {profileOwner.followedPages.length} pages
-        </b>
-      </li>
-      <li>
-        joined groups:{" "}
-        <b className="text-secondary">
-          {profileOwner.joinedGroups.length} groups
-        </b>
-      </li>
+
       <li>
         friends count:{" "}
         <b className="text-secondary">

@@ -689,7 +689,7 @@ const userResolvers = {
           )?._doc;
 
           if (!userDoc) {
-            throw new GraphQLError("no user with this username not found", {
+            throw new GraphQLError("no user with this username", {
               extensions: {
                 code: "NOT_FOUND",
               },
@@ -1226,27 +1226,97 @@ const userResolvers = {
         userQuery: (userId: string) => {
           return User.findByIdAndDelete(userId)
             .select(
-              "followedPages adminPages ownedPages joinedGroups adminGroups ownedGroups friendList allPosts profilePicture coverPicture"
+              "followedPages adminPages ownedPages joinedGroups adminGroups ownedGroups profilePicture coverPicture"
             )
             .populate([
               {
                 path: "ownedPages ownedGroups",
-                select: "admins profilePicture coverPicture",
-              },
-              {
-                path: "allPosts.post",
-                select: "owner",
+                select: "profilePicture coverPicture",
               },
             ]);
         },
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async resolveCallback(authUser: any) {
-          // pages promises
+          // media promises
+          const allMedia = [
+            authUser.profilePicture?.public_id,
+            authUser.coverPicture?.public_id,
 
+            ...authUser.ownedGroups
+              .map(
+                (group: Pick<GroupType, "profilePicture" | "coverPicture">) => {
+                  return [
+                    group.profilePicture?.public_id,
+                    group.coverPicture?.public_id,
+                  ];
+                }
+              )
+              .flat(Infinity),
+
+            ...authUser.ownedPages
+              .map(
+                (page: Pick<PageType, "profilePicture" | "coverPicture">) => {
+                  return [
+                    page.profilePicture?.public_id,
+                    page.coverPicture?.public_id,
+                  ];
+                }
+              )
+              .flat(Infinity),
+          ].filter(Boolean);
+
+          const ownedPostsMediaAndIDsPromise = Post.find({
+            owner: authUser._id,
+          }).select("media");
+          const ownedCommentsMedia = Comment.find({
+            owner: authUser._id,
+          }).select("media");
+          const ownedStoriesMedia = Story.find({ owner: authUser._id }).select(
+            "media"
+          );
+
+          const [storiesMediaRes, commentsMediaRes, postsMediaRes] =
+            await Promise.allSettled([
+              ownedStoriesMedia,
+              ownedCommentsMedia,
+              ownedPostsMediaAndIDsPromise,
+            ]);
+
+          const storiesMedia =
+            storiesMediaRes.status === "fulfilled" ? storiesMediaRes.value : [];
+          const commentsMedia =
+            commentsMediaRes.status === "fulfilled"
+              ? commentsMediaRes.value
+              : [];
+          const postsMedia =
+            postsMediaRes.status === "fulfilled" ? postsMediaRes.value : [];
+
+          allMedia.push(
+            ...[...storiesMedia, ...commentsMedia, ...postsMedia]
+              .map((item) => item.media)
+              .flat(Infinity)
+              .map((media) => media.public_id)
+          );
+
+          const removeAllMediaPromise = deleteMedia(allMedia);
+
+          // friends promises
+          const removeUserFromFriends = User.updateMany(
+            { friendsList: authUser._id },
+            { $pull: { friendsList: authUser._id } }
+          );
+
+          const removeUserFriendshipRequestsToOtherUsers = User.updateMany(
+            { friendsRequests: authUser._id },
+            { $pull: { friendsRequests: authUser._id } }
+          );
+
+          // pages promises
           const removeUserFromFollowedPages = Page.updateMany(
             {
               _id: {
-                $or: authUser.followedPages,
+                $in: authUser.followedPages,
               },
             },
             {
@@ -1256,7 +1326,7 @@ const userResolvers = {
           const removeUserFromAdminPages = Page.updateMany(
             {
               _id: {
-                $or: authUser.adminPages,
+                $in: authUser.adminPages,
               },
             },
             {
@@ -1276,13 +1346,13 @@ const userResolvers = {
           const removeAdminsFromOwnedPages = User.updateMany(
             {
               _id: {
-                $or: ownedPagesAdminIDs,
+                $in: ownedPagesAdminIDs,
               },
             },
             {
               $pull: {
                 adminPages: {
-                  $or: ownedPagesAdminIDs,
+                  $in: ownedPagesAdminIDs,
                 },
               },
             }
@@ -1291,13 +1361,13 @@ const userResolvers = {
           const removeAllFollowersFromOwnedPages = User.updateMany(
             {
               followedPages: {
-                $or: authUser.ownedPages.map((page: PageType) => page._id),
+                $in: authUser.ownedPages.map((page: PageType) => page._id),
               },
             },
             {
               $pull: {
                 followedPages: {
-                  $or: authUser.ownedPages.map((page: PageType) => page._id),
+                  $in: authUser.ownedPages.map((page: PageType) => page._id),
                 },
               },
             }
@@ -1305,22 +1375,32 @@ const userResolvers = {
 
           const removeOwnedPages = Page.deleteMany({
             _id: {
-              $or: authUser.ownedPages.map((page: PageType) => page._id),
+              $in: authUser.ownedPages.map((page: PageType) => page._id),
             },
           });
 
           // groups promises
-          const removeUserFromFollowedAndAdminGroups = Group.updateMany(
+          const removeUserFromJoinedGroups = Group.updateMany(
             {
               _id: {
-                $or: [...authUser.joinedGroups, ...authUser.adminGroups],
+                $in: authUser.joinedGroups,
+              },
+            },
+            {
+              $inc: { membersCount: -1 },
+            }
+          );
+
+          const removeUserFromAdminGroups = Group.updateMany(
+            {
+              _id: {
+                $in: authUser.adminGroups,
               },
             },
             {
               $pull: {
                 admins: authUser._id,
               },
-              $inc: { membersCount: -1 },
             }
           );
 
@@ -1346,16 +1426,16 @@ const userResolvers = {
             }
           );
 
-          const removeAllFollowersFromOwnedGroups = User.updateMany(
+          const removeAllMembersFromOwnedGroups = User.updateMany(
             {
-              followedGroups: {
-                $or: authUser.ownedGroups.map((group: GroupType) => group._id),
+              joinedGroups: {
+                $in: authUser.ownedGroups.map((group: GroupType) => group._id),
               },
             },
             {
               $pull: {
-                followedGroups: {
-                  $or: authUser.ownedGroups.map(
+                joinedGroups: {
+                  $in: authUser.ownedGroups.map(
                     (group: GroupType) => group._id
                   ),
                 },
@@ -1365,180 +1445,61 @@ const userResolvers = {
 
           const removeOwnedGroups = Group.deleteMany({
             _id: {
-              $or: authUser.ownedGroups.map((group: GroupType) => group._id),
+              $in: authUser.ownedGroups.map((group: GroupType) => group._id),
             },
           });
 
           // posts promises
-          const ownedPosts = (
-            authUser as unknown as {
-              allPosts: {
-                post: Record<"owner" | "_id", typeof Types.ObjectId>;
-              }[];
-            }
-          ).allPosts.filter(
-            (post) => post.post.owner.toString() === authUser._id
-          );
-
-          const getPostsMediaIDs = Post.find({
-            $or: [
-              {
-                _id: {
-                  $or: ownedPosts.map((post) => post.post._id),
-                },
-              },
-              {
-                communityId: [
-                  ...authUser.ownedPages.map((page: PageType) => page._id),
-                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
-                ],
-              },
-            ],
-          }).select("media");
-
           const removePostsFromUsersSavedPosts = User.updateMany(
             {
               savedPosts: {
-                $or: ownedPosts.map((post) => post.post._id),
+                $in: postsMedia.map((post) => post._id),
               },
             },
             {
               $pull: {
                 savedPosts: {
-                  $or: ownedPosts.map((post) => post.post._id),
+                  $in: postsMedia.map((post) => post._id),
                 },
               },
             }
           );
 
-          const removeUserPosts = Post.deleteMany({
-            $or: [
-              {
-                _id: {
-                  $or: ownedPosts.map((post) => post.post._id),
-                },
-              },
-              {
-                communityId: [
-                  ...authUser.ownedPages.map((page: PageType) => page._id),
-                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
-                ],
-              },
-            ],
-          });
-
-          // comments promises
-          const getCommentsMediaIDs = Comment.find({
-            $or: [
-              { owner: authUser._id },
-              { post: ownedPosts.map((post) => post.post._id) },
-              {
-                communityId: [
-                  ...authUser.ownedPages.map((page: PageType) => page._id),
-                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
-                ],
-              },
-            ],
-          }).select("media");
+          const removeUserPosts = Post.deleteMany({ owner: authUser._id });
 
           const removeUserComments = Comment.deleteMany({
-            $or: [
-              { owner: authUser._id },
-              { post: ownedPosts.map((post) => post.post._id) },
-              {
-                communityId: [
-                  ...authUser.ownedPages.map((page: PageType) => page._id),
-                  ...authUser.ownedGroups.map((group: GroupType) => group._id),
-                ],
-              },
-            ],
+            owner: authUser._id,
           });
-
-          // stories promises
-          const getStoriesMediaIDs = Story.find({ owner: authUser._id }).select(
-            "media"
-          );
 
           const removeUserStories = Story.deleteMany({
             owner: authUser._id,
           });
 
           // sending the promises
-          const [storiesMedia, commentsMedia, postsMedia] =
-            await Promise.allSettled([
-              // get media promises
-              getStoriesMediaIDs,
-              getCommentsMediaIDs,
-              getPostsMediaIDs,
-
-              // pages
-              removeUserFromFollowedPages,
-              removeUserFromAdminPages,
-              removeAdminsFromOwnedPages,
-              removeAllFollowersFromOwnedPages,
-              removeOwnedPages,
-
-              // groups
-              removeUserFromFollowedAndAdminGroups,
-              removeAdminsFromOwnedGroups,
-              removeAllFollowersFromOwnedGroups,
-              removeOwnedGroups,
-
-              // posts
-              removePostsFromUsersSavedPosts,
-            ]);
-
-          const allMedia = [
-            authUser.profilePicture?.public_id,
-            authUser.coverPicture?.public_id,
-
-            ...authUser.ownedGroups
-              .map((group: GroupType) => {
-                const theGroup = group as Pick<
-                  GroupType,
-                  "_id" | "admins" | "coverPicture" | "profilePicture"
-                >;
-
-                return [
-                  theGroup.profilePicture?.public_id,
-                  theGroup.coverPicture?.public_id,
-                ];
-              })
-              .flat(Infinity),
-
-            ...authUser.ownedPages
-              .map((page: PageType) => {
-                const thePage = page as Pick<
-                  PageType,
-                  "_id" | "admins" | "coverPicture" | "profilePicture"
-                >;
-
-                return [
-                  thePage.profilePicture?.public_id,
-                  thePage.coverPicture?.public_id,
-                ];
-              })
-              .flat(Infinity),
-          ].filter(Boolean) as string[];
-
-          [storiesMedia, commentsMedia, postsMedia].forEach((mediaArr) => {
-            if (mediaArr.status === "fulfilled") {
-              allMedia.push(
-                ...mediaArr.value
-                  .filter(Boolean)
-                  .map((media: ImageType) => media.public_id)
-              );
-            }
-          });
-
-          const removeAllMediaPromise = deleteMedia(allMedia);
-
-          // sending delete promises
           await Promise.allSettled([
             // media
             removeAllMediaPromise,
 
+            // friends
+            removeUserFromFriends,
+            removeUserFriendshipRequestsToOtherUsers,
+
+            // pages
+            removeUserFromFollowedPages,
+            removeUserFromAdminPages,
+            removeAdminsFromOwnedPages,
+            removeAllFollowersFromOwnedPages,
+            removeOwnedPages,
+
+            // groups
+            removeUserFromAdminGroups,
+            removeAdminsFromOwnedGroups,
+            removeAllMembersFromOwnedGroups,
+            removeOwnedGroups,
+            removeUserFromJoinedGroups,
+
             // posts
+            removePostsFromUsersSavedPosts,
             removeUserPosts,
 
             // comments

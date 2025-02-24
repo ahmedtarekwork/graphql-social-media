@@ -55,7 +55,7 @@ import type {
 } from "@/lib/types";
 
 // gql
-import { type DocumentNode, gql, useMutation } from "@apollo/client";
+import { gql, useMutation } from "@apollo/client";
 
 // utils
 import { updateMedia, uploadMedia } from "@/lib/utils";
@@ -201,12 +201,12 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       ...(prev as any)?.[getProfileInfoQueryName],
                       [pictureName]: {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         ...(prev as any)?.[getProfileInfoQueryName]?.[
                           pictureName
                         ],
                         public_id: newValues[pictureName].public_id,
                         secure_url: newValues[pictureName].secure_url,
-                        // _id: newValues[pictureName]._id,
                       },
                     },
                   };
@@ -222,12 +222,8 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
               duration: 9000,
             });
           },
-          onError(error) {
-            console.log(error);
-            // { graphQLErrors }
-
+          onError() {
             toast.error(
-              // graphQLErrors?.[0]?.message ||
               `something went wrong while uploading ${
                 profileType === "personal" ? "your" : profileType
               } new ${pictureType} picture`,
@@ -320,6 +316,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
                     }
 
                     uploadProfileOrCoverPicture({ variables });
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   } catch (_) {
                     toast.error(
                       `something went wrong while upload ${

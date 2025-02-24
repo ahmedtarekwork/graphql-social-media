@@ -72,6 +72,7 @@ const JoinGroupBtns = ({
           isUserMemberInGroupUpdateQuery((prev) => ({
             ...prev!,
             isUserMemberInGroup: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(prev as any)?.isUserMemberInGroup,
               isUserMemberInGroup: true,
             },
@@ -82,6 +83,7 @@ const JoinGroupBtns = ({
           isUserSentJoinRequestUpdateQuery((prev) => ({
             ...prev!,
             isUserSentJoinRequest: {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...(prev as any)?.isUserSentJoinRequest,
               isUserSentJoinRequest: true,
             },
@@ -117,6 +119,7 @@ const JoinGroupBtns = ({
       isUserMemberInGroupUpdateQuery((prev) => ({
         ...prev!,
         isUserMemberInGroup: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(prev as any)?.isUserMemberInGroup,
           isUserMemberInGroup: false,
         },

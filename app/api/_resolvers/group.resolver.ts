@@ -1212,7 +1212,7 @@ const groupResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while deleting the group",
         async resolveCallback(user) {
-          const group = (await Group.findById(groupId))?._doc;
+          const group = (await Group.findById(groupId).select("owner profilePicture coverPicture"))?._doc;
 
           if (!group) {
             throw new GraphQLError("group with given id not found", {
@@ -1220,13 +1220,26 @@ const groupResolvers = {
             });
           }
 
-          if (group.owner.toString !== user._id) {
+          if (group.owner.toString() !== user._id) {
             throw new GraphQLError("group owner can only delete the group", {
               extensions: { code: "FORBIDDEN" },
             });
           }
 
           await Group.deleteOne({ _id: groupId });
+
+          const [postsMediaRes, commentsMediaRes] = await Promise.allSettled([
+            Post.find({ communityId: groupId }).select("media"),
+            Comment.find({ communityId: groupId }).select("media"),
+          ]);
+
+          const postsMedia =
+            postsMediaRes.status === "fulfilled" ? postsMediaRes.value : [];
+          const commentsMedia =
+            commentsMediaRes.status === "fulfilled"
+              ? commentsMediaRes.value
+              : [];
+
           const removeOwnerFromGroup = User.updateOne(
             { _id: user._id },
             {
@@ -1235,7 +1248,7 @@ const groupResolvers = {
           );
 
           const removeAdminsFromGroup = User.updateMany(
-            { _id: { $or: group.admins } },
+            { adminGroups: groupId },
             {
               $pull: {
                 adminGroups: groupId,
@@ -1250,18 +1263,30 @@ const groupResolvers = {
             }
           );
 
-          // TODO: REMOVE POSTS WITH IT'S MEDIA
-          // TODO: REMOVE COMMENTS WITH IT'S MEDIA
+          const removeGroupPosts = Post.deleteMany({ communityId: groupId });
+          const removeGroupComments = Comment.deleteMany({
+            communityId: groupId,
+          });
 
           const promisesArr: Promise<unknown>[] = [
             removeOwnerFromGroup,
             removeAdminsFromGroup,
             removeMembersFromGroup,
+            removeGroupPosts,
+            removeGroupComments,
           ];
 
           const mediaArr = [
             group.profilePicture?.public_id,
             group.coverPicture?.public_id,
+            ...postsMedia
+              .map((post) => post.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+            ...commentsMedia
+              .map((comment) => comment.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
           ].filter(Boolean);
 
           if (mediaArr.length) promisesArr.push(deleteMedia(mediaArr));

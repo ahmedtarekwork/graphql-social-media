@@ -165,7 +165,7 @@ const DisplayCommunities = ({
         btn = {
           type: "custom",
           component: (
-            <Button asChild className="block w-fit mx-auto">
+            <Button asChild className="flex w-fit mx-auto">
               <Link href={`/${pluralCommunityName}/new`}>
                 <MdFiberNew />
                 create a {mode}

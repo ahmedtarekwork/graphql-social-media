@@ -142,7 +142,7 @@ const PageAndGroupSettings = ({
             {user?._id === profileInfo.owner._id ? (
               <div className="red-setting-slice">
                 delete {profileType}
-                <DeleteCommunityBtn />
+                <DeleteCommunityBtn profileType={profileType} />
               </div>
             ) : (
               <div className="red-setting-slice">

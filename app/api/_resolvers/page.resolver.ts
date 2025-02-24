@@ -11,6 +11,7 @@ import { Types } from "mongoose";
 import User from "../_models/user.model";
 import Page from "../_models/page.model";
 import Post from "../_models/post.model";
+import Comment from "../_models/comment.model";
 
 // types
 import type {
@@ -987,7 +988,11 @@ const pageResolvers = {
         validateToken: true,
         publicErrorMsg: "something went wrong while deleting the page",
         async resolveCallback(user) {
-          const page = (await Page.findById(pageId))?._doc;
+          const page = (
+            await Page.findById(pageId).select(
+              "profilePicture coverPicture owner"
+            )
+          )?._doc;
 
           if (!page) {
             throw new GraphQLError("page with given id not found", {
@@ -996,14 +1001,27 @@ const pageResolvers = {
           }
 
           if (user._id !== page.owner.toString()) {
-            throw new GraphQLError("you aren't the page owner", {
-              extensions: { code: "FORBIDDEN" },
-            });
+            throw new GraphQLError(
+              "page owner only have the ability to delete the page",
+              {
+                extensions: { code: "FORBIDDEN" },
+              }
+            );
           }
 
           await Page.deleteOne({ _id: pageId });
 
-          // TODO: REMOVE PAGE POSTS AND IT'S MEDIA AND IT'S COMMENTS AND IT'S MEDIA
+          const [postsMediaRes, commentsMediaRes] = await Promise.allSettled([
+            Post.find({ communityId: pageId }).select("media"),
+            Comment.find({ communityId: pageId }).select("media"),
+          ]);
+
+          const postsMedia =
+            postsMediaRes.status === "fulfilled" ? postsMediaRes.value : [];
+          const commentsMedia =
+            commentsMediaRes.status === "fulfilled"
+              ? commentsMediaRes.value
+              : [];
 
           const removeOwnerFromPage = User.updateOne(
             { _id: user._id },
@@ -1011,7 +1029,7 @@ const pageResolvers = {
           );
           const removeAdminsFromPage = User.updateMany(
             {
-              _id: { $or: page.admins },
+              adminPages: pageId,
             },
             {
               $pull: {
@@ -1030,16 +1048,32 @@ const pageResolvers = {
             }
           );
 
-          const mediaArr = [
-            page.profilePicture?.public_id,
-            page.coverPicture?.public_id,
-          ].filter(Boolean);
+          const removePagePosts = Post.deleteMany({ communityId: pageId });
+          const removePageComments = Comment.deleteMany({
+            communityId: pageId,
+          });
 
           const promisesArr: Promise<unknown>[] = [
             removeOwnerFromPage,
             removeAdminsFromPage,
             removeFollowersFromPage,
+            removePagePosts,
+            removePageComments,
           ];
+
+          const mediaArr = [
+            page.profilePicture?.public_id,
+            page.coverPicture?.public_id,
+            ...postsMedia
+              .map((post) => post.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+            ...commentsMedia
+              .map((comment) => comment.media)
+              .flat(Infinity)
+              .map((media) => media.public_id),
+          ].filter(Boolean);
+
           if (mediaArr.length) promisesArr.push(deleteMedia(mediaArr));
 
           await Promise.allSettled(promisesArr);

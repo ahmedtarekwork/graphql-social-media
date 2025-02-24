@@ -65,7 +65,7 @@ const ExpulsingUserDialog = ({ groupId, memberId }: Props) => {
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogCancel>{loading ? "Close" : "Cancel"}</AlertDialogCancel>
         <AlertDialogAction
           className="bg-orange-600 hover:!bg-orange-700"
           disabled={loading}

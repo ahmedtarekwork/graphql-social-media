@@ -150,7 +150,9 @@ const JoinRequestsListContent = ({
         updateJoinRequestsCountQuery((prev) => ({
           ...prev!,
           joinRequestsCount: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ...(prev as any)!.joinRequestsCount,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             count: ((prev as any)!.joinRequestsCount?.count || 0) - 1,
           },
         }));

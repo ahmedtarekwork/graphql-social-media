@@ -31,6 +31,7 @@ const userTypeDefs = gql`
       requestsPagination: PaginatedItemsInput!
     ): GetUserFriendshipRequestsResponseType!
 
+    # friends
     getUserFriends(
       friendsPagination: GetUserFriendsInput!
     ): GetUserFriendsResponseType!
