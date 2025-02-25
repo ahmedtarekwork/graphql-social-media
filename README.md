@@ -12,4 +12,4 @@ for styling I used Tailwind CSS with Shadcn UI, for the database I used mongodb 
 - I will use vercel cron jobs for remove "stories" after 24h from it's publish date.
 
 **API documentation link:** <br />
-**Live privew link:**
+**Live privew link:** https://graphql-social-media.vercel.app
