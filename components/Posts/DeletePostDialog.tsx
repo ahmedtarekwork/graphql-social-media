@@ -92,6 +92,7 @@ const DeletePostDialog = (props: Props) => {
       deletePost();
       isDeletePost.current = false;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props?.fetchMoreLoading]);
 
   return (

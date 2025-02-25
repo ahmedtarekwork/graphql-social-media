@@ -255,6 +255,7 @@ const CommentForm = ({
     if (mode === "edit" && selectedCommentToEdit.media?.length) {
       mediaPreviewerRef.current?.setOldMedia(selectedCommentToEdit.media);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
   useEffect(() => {

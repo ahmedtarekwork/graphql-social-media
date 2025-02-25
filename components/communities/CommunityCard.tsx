@@ -21,7 +21,7 @@ type Props = {
 const CommunityCard = ({ community, type }: Props) => {
   const { name, _id, profilePicture } = community;
 
-  let Icon = type === "page" ? FaFlag : TiGroup;
+  const Icon = type === "page" ? FaFlag : TiGroup;
 
   return (
     <li className="border-2 border-primary rounded-sm space-y-2 pb-2">

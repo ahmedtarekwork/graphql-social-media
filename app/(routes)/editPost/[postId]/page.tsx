@@ -92,6 +92,7 @@ const EditPostPage = () => {
       getIsUserAdminInPage({
         variables: { pageId: data?.getSinglePost?.communityId },
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   useEffect(() => {

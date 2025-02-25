@@ -103,6 +103,7 @@ const NewPageFormPage = () => {
 
         if (coverPicture && coverPictureRes.status === "fulfilled")
           pageData.coverPicture = coverPictureRes.value[0];
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_) {
         toast.error("something went wrong while uploading pictures");
         return;

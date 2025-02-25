@@ -75,7 +75,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
   const myReaction = myReactionResponse?.[getReactionQueryName]?.reaction;
   const reactionInfo = reactionsInfo.find(({ name }) => name === myReaction);
   const Icon = reactionInfo?.Icon || AiFillLike;
-  let isTouchEvent = false;
+  const isTouchEvent = useRef(false);
 
   const reactionsListRef = useRef<HTMLUListElement>(null);
   const parentHolderRef = useRef<HTMLDivElement>(null);
@@ -98,8 +98,8 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
       )
         return;
 
-      if (isTouchEvent) {
-        setTimeout(() => (isTouchEvent = false), 100);
+      if (isTouchEvent.current) {
+        setTimeout(() => (isTouchEvent.current = false), 100);
       }
 
       reactionsListRef.current?.classList.add("hide-reactions-list");
@@ -107,7 +107,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
 
     window.addEventListener("touchstart", handleCloseReactionsList);
 
-    () => {
+    return () => {
       window.removeEventListener("touchstart", handleCloseReactionsList);
     };
   }, []);
@@ -117,7 +117,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
       ref={parentHolderRef}
       className="relative"
       onTouchStart={() => {
-        isTouchEvent = true;
+        isTouchEvent.current = true;
         if (loading || myReaectionLoading) return;
         reactionsListRef.current?.classList.remove("hide-reactions-list");
       }}
@@ -138,7 +138,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
           `text-${reactionInfo?.color || "gray-600"}`
         )}
         onTouchStart={() => {
-          isTouchEvent = true;
+          isTouchEvent.current = true;
           if (loading || myReaectionLoading) return;
           reactionsListRef.current?.classList.remove("hide-reactions-list");
         }}
@@ -175,7 +175,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
           "hide-reactions-list flex-wrap absolute bottom-[90%] left-0 shadow-sm flex gap-3.5 max-w-screen w-[270px] justify-between min-w-max bg-accent rounded-[100vh] p-3 transition duration-200 border-primary border border-opacity-60"
         )}
       >
-        {reactionsInfo.map(({ name, Icon, color }, i) => (
+        {reactionsInfo.map(({ name, Icon, color }) => (
           <li
             key={name}
             className={
@@ -192,7 +192,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
                   ({ name: refName }) => refName === name
                 )?.ref
               }
-              onClick={(e) => {
+              onClick={() => {
                 reactionsListRef.current?.classList.add("hide-reactions-list");
 
                 toggleReaction({

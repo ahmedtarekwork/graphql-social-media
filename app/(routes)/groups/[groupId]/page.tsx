@@ -4,7 +4,7 @@
 import { useParams } from "next/navigation";
 
 // react
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 
 // contexts
 import { authContext } from "@/contexts/AuthContext";
@@ -21,7 +21,7 @@ import PostsPreviewer from "@/components/Posts/PostsPreviewer";
 import JoinGroupBtns from "@/components/groups/JoinGroupBtns";
 
 // gql
-import { gql, useLazyQuery, useQuery } from "@apollo/client";
+import { gql, useQuery } from "@apollo/client";
 
 // SVGs
 import IDSVG from "/public/illustrations/ID_Card.svg";
@@ -192,8 +192,8 @@ const SingleGroupPage = () => {
             <IllustrationPage
               content={
                 <>
-                  you can't see this group posts because it's not a public
-                  group, you can send a request to join the group.
+                  you can{"'"}t see this group posts because it{"'"}s not a
+                  public group, you can send a request to join the group.
                 </>
               }
               svg={worldSVG}

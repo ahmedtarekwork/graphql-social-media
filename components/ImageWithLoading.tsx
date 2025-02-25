@@ -35,6 +35,7 @@ const ImageWithLoading = ({
           const blob = await response.blob();
 
           setSrc(URL.createObjectURL(blob));
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_) {
         } finally {
           setLoading(false);
@@ -73,6 +74,7 @@ const ImageWithLoading = ({
   return (
     <Image
       {...props}
+      alt={props.alt || "image"}
       ref={imgRef}
       src={src}
       className={classNames(

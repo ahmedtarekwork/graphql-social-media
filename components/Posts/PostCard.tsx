@@ -175,7 +175,7 @@ const PostCard = ({
           setStopFetchMore,
         };
 
-  let profilePictureSrc =
+  const profilePictureSrc =
     community === "page"
       ? communityInfo?.profilePicture?.secure_url
       : profilePicture?.secure_url;

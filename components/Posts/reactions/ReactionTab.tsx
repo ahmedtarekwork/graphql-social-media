@@ -109,6 +109,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
 
   useEffect(() => {
     if (!initFetch && activeReaction === reaction) getReactionUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeReaction]);
 
   useEffect(() => {

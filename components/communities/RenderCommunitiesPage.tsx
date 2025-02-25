@@ -7,7 +7,7 @@ import { useState } from "react";
 import CommunitiesSidebar from "@/components/communities/CommunitiesSidebar";
 import DisplayCommunities from "@/components/communities/DisplayCommunities";
 // shadcn
-import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar";
 
 // types
 import type { CommunitiesType } from "@/lib/types";

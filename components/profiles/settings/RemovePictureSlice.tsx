@@ -1,3 +1,6 @@
+// nextjs
+import { useParams } from "next/navigation";
+
 // react
 import { useContext } from "react";
 
@@ -19,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { authContext } from "@/contexts/AuthContext";
 
 // gql
-import { type DocumentNode, gql, useMutation } from "@apollo/client";
+import { gql, useMutation } from "@apollo/client";
 
 // icons
 import { IoMdRemoveCircle } from "react-icons/io";
@@ -29,7 +32,6 @@ import { toast } from "sonner";
 
 // types
 import { type ProfileSettingsProfileTypeProps } from "./ProfileSettings";
-import { useParams } from "next/navigation";
 
 type Props = {
   pictureType: "cover" | "profile";

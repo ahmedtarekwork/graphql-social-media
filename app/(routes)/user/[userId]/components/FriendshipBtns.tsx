@@ -107,6 +107,7 @@ const FriendshipBtns = ({ userId }: Props) => {
               data.doesCurrentUserSentFriendshipRequest.status
             );
           }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
           toast.error(
             "can't send friendship request to this user at the momment",

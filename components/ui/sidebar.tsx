@@ -208,6 +208,7 @@ const Sidebar = React.forwardRef<
           watcher.disconnect();
         };
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (collapsible === "none") {

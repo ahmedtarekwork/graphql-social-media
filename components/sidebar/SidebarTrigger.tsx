@@ -40,6 +40,7 @@ const SidebarTrigger = () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.classList.remove("block-scroll");
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   return (

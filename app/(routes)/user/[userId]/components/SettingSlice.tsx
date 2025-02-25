@@ -19,7 +19,7 @@ import { HiSwitchHorizontal } from "react-icons/hi";
 import type { ReturnTypeOfUseQuery } from "@/lib/types";
 
 // gql
-import { DocumentNode, gql, useMutation } from "@apollo/client";
+import { gql, useMutation } from "@apollo/client";
 
 // utils
 import { toast } from "sonner";

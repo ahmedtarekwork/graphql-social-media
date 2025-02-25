@@ -84,7 +84,7 @@ const DeleteCommunityBtn = ({ profileType }: Props) => {
 
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete this page
-            and remove it's data from our servers forever.
+            and remove it{"'"}s data from our servers forever.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
