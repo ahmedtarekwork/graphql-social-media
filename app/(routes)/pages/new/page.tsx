@@ -189,6 +189,7 @@ const NewPageFormPage = () => {
                     }}
                   >
                     <Button
+                      title="cance profile picture"
                       className="red-btn w-full"
                       onClick={() => setProfilePicture(null)}
                       disabled={disableBtn}
@@ -263,6 +264,7 @@ const NewPageFormPage = () => {
                     }}
                   >
                     <Button
+                      title="cancel cover picture"
                       disabled={disableBtn}
                       className="red-btn w-full"
                       onClick={() => setCoverPicture(null)}
@@ -289,6 +291,7 @@ const NewPageFormPage = () => {
 
         <Button asChild>
           <motion.button
+            title="create a new page"
             className="w-full"
             disabled={disableBtn}
             layout="position"

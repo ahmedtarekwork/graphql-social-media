@@ -97,6 +97,7 @@ const TogglePageFollow = () => {
 
   return (
     <Button
+      title={isUserFollowThisPage ? "unfollow the page" : "follow this page"}
       disabled={isUserFollowingPageLoading || loading}
       onClick={() => {
         if (!user) {

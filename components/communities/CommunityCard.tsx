@@ -49,7 +49,7 @@ const CommunityCard = ({ community, type }: Props) => {
       </Link>
 
       <Button asChild className="w-[95%] mx-auto">
-        <Link href={`${type}s/${_id}`}>
+        <Link title={`view ${type}`} href={`${type}s/${_id}`}>
           <FaEye />
           View {type}
         </Link>

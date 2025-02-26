@@ -308,6 +308,7 @@ const SidebarTrigger = React.forwardRef<
 
   return (
     <Button
+      title="toggle side bar"
       ref={ref}
       data-sidebar="trigger"
       variant="ghost"

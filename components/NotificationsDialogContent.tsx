@@ -220,6 +220,7 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
           <Button
             disabled={markAllNotificationsAsReadLoading}
             onClick={() => markAllNotificationsAsRead()}
+            title="mark all notifications as read"
           >
             {markAllNotificationsAsReadLoading
               ? "Loading..."
@@ -239,6 +240,7 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
               type: "custom",
               component: (
                 <Button
+                  title="close notifications list"
                   className="mx-auto"
                   onClick={() => setOpenDialog(false)}
                 >
@@ -259,6 +261,7 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
                 <Button
                   className="mx-auto"
                   onClick={() => setOpenDialog(false)}
+                  title="close notifications list"
                 >
                   close
                 </Button>
@@ -322,6 +325,7 @@ const NotificationsDialogContent = ({ setOpenDialog }: Props) => {
                 onClick={handleFetchMore}
                 className="w-fit mx-auto mt-4"
                 disabled={fetchMoreLoading || loading}
+                title="get more notifications"
               >
                 {fetchMoreLoading || loading ? "Loading..." : "See more"}
               </Button>

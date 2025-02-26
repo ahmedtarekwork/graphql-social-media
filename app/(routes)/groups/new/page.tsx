@@ -209,6 +209,7 @@ const NewGroupFormPage = () => {
                     }}
                   >
                     <Button
+                      title="cancel profile picture"
                       className="red-btn w-full"
                       onClick={() => setProfilePicture(null)}
                       disabled={disableBtn}
@@ -283,6 +284,7 @@ const NewGroupFormPage = () => {
                     }}
                   >
                     <Button
+                      title="cancel cover picture"
                       disabled={disableBtn}
                       className="red-btn w-full"
                       onClick={() => setCoverPicture(null)}
@@ -309,6 +311,7 @@ const NewGroupFormPage = () => {
 
         <Button asChild>
           <motion.button
+            title="create a new group"
             className="w-full"
             disabled={disableBtn}
             layout="position"

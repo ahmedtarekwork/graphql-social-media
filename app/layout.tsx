@@ -33,7 +33,28 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "Social Media App",
-  description: "App for communication",
+  description: "Graphql App for communication",
+  keywords:
+    "Ahmed Tarek social media app, Ahmed Social media app, Social Media, Social Media App, Graphql, Graphql social media app, communication app",
+  authors: {
+    name: "Ahmed Tarek",
+    url: "https://github.com/ahmedtarekwork",
+  },
+
+  openGraph: {
+    url: "https://graphql-social-media.vercel.app",
+    type: "website",
+    title: "Graphql Social Media",
+    description: "Graphql App for communication",
+    images: ["https://graphql-social-media.vercel.app/og_img.webp"],
+    siteName: "Graphql Social Media",
+  },
+  twitter: {
+    description: "Graphql App for communication",
+    images: ["https://graphql-social-media.vercel.app/og_img.webp"],
+    title: "Graphql social media app",
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
@@ -43,6 +64,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* veryfiy google search console */}
+        <meta
+          name="google-site-verification"
+          content="Ggke0z6Sln6NQG9ngm9QUMfrzX7josJRNWfSv4mta9E"
+        />
+
+        {/* Twitter Meta Tags */}
+        <meta property="twitter:domain" content="ahmed-profile.vercel.app" />
+        <meta
+          property="twitter:url"
+          content="https://ahmed-profile.vercel.app"
+        />
+      </head>
+
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >

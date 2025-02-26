@@ -49,7 +49,7 @@ const IllustrationPage = ({ content, svg, btn }: Props) => {
 
       {btn.type === "go-to-home" ? (
         <Button asChild className="w-fit mx-auto">
-          <Link href="/">
+          <Link title="go to home" href="/">
             <MdHome size={20} />
             <p>Go to home</p>
           </Link>

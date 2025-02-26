@@ -142,7 +142,7 @@ const FormMediaPreview = forwardRef<FormMediaPreviewRefType, Props>(
                   className="red-btn w-full"
                   disabled={disableBtns}
                 >
-                  <AlertDialogTrigger>
+                  <AlertDialogTrigger title="delete the media">
                     <FaTrash size={18} />
                   </AlertDialogTrigger>
                 </Button>

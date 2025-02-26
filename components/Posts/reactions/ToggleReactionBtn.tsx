@@ -131,6 +131,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
       }}
     >
       <Button
+        title="toggle reaction"
         ref={outsideBtnRef}
         variant={type === "post" ? "ghost" : "link"}
         className={classNames(
@@ -185,6 +186,7 @@ const ToggleReactionBtn = ({ itemId, type }: Props) => {
             }
           >
             <button
+              title="toggle reaction"
               className="group"
               disabled={loading || myReaectionLoading}
               ref={

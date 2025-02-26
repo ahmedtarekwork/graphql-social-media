@@ -107,7 +107,10 @@ const DisclaimerFromCommunityBtn = ({
   return (
     <AlertDialog>
       <Button asChild className="red-btn">
-        <AlertDialogTrigger disabled={loading}>
+        <AlertDialogTrigger
+          title="disclaimer from community"
+          disabled={loading}
+        >
           {loading ? (
             <Loading withText size={18} fill="white" text="Processing..." />
           ) : (

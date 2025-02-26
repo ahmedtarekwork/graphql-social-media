@@ -82,6 +82,7 @@ const HandleFriendshipRequestBtn = ({
   return (
     <div className="space-y-2 p-2 [&>*]:w-full">
       <Button
+        title="accept friend ship request"
         className={btnStyle}
         onClick={() => {
           handleFriendshipRequest({
@@ -100,6 +101,7 @@ const HandleFriendshipRequestBtn = ({
       </Button>
 
       <Button
+        title="cancel friend ship request"
         onClick={() => {
           handleFriendshipRequest({
             variables: {

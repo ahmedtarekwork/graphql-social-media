@@ -505,6 +505,7 @@ const PostForm = ({
         />
         <Button asChild>
           <label
+            title="add media to post"
             htmlFor="add-media-to-post"
             className={classNames(
               loading || uploadingMedia
@@ -517,7 +518,7 @@ const PostForm = ({
           </label>
         </Button>
 
-        <Button disabled={loading || uploadingMedia}>
+        <Button title="submit" disabled={loading || uploadingMedia}>
           <AiFillPlusCircle size={20} />
           {loading || uploadingMedia
             ? "Loading..."

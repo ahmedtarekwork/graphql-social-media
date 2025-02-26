@@ -157,6 +157,7 @@ const SettingSlice = ({
       <div className="flex gap-2">
         {activeInput && (
           <Button
+            title="submit changes"
             disabled={loading}
             onClick={() => {
               const newValue = newValueInputRef.current?.value;
@@ -209,6 +210,7 @@ const SettingSlice = ({
           className={activeInput ? "bg-red-600 hover:bg-red-500" : ""}
           onClick={() => setActiveInput((prev) => !prev)}
           disabled={loading}
+          title={activeInput ? "cancel new changes" : "change this info"}
         >
           {activeInput ? (
             <>

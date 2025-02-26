@@ -140,7 +140,7 @@ const JoinGroupBtns = ({
 
   if (isUserSentJoinRequestLoading) {
     return (
-      <Button disabled>
+      <Button title="disabled always button for show loading" disabled>
         <Loading size={18} withText fill="white" />
       </Button>
     );
@@ -157,7 +157,11 @@ const JoinGroupBtns = ({
 
   if (isMember) {
     return (
-      <Button onClick={() => exitGroup()} disabled={exitGroupLoading}>
+      <Button
+        title="exit from goup"
+        onClick={() => exitGroup()}
+        disabled={exitGroupLoading}
+      >
         {exitGroupLoading ? (
           <Loading size={18} fill="white" withFullHeight={false} />
         ) : (
@@ -170,7 +174,11 @@ const JoinGroupBtns = ({
 
   if (!isMember) {
     return (
-      <Button onClick={() => joinGroup()} disabled={joinGroupLoading}>
+      <Button
+        title="join group"
+        onClick={() => joinGroup()}
+        disabled={joinGroupLoading}
+      >
         {joinGroupLoading ? (
           <Loading size={18} fill="white" withFullHeight={false} />
         ) : (

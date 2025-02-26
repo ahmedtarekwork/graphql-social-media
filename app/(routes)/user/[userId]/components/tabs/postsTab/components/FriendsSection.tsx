@@ -143,7 +143,7 @@ const FriendsSection = () => {
         <>
           <p className="text-center mb-2">Add some friends to see them here</p>
           <Button className="mx-auto flex" asChild>
-            <Link href="/peopleMayKnow">
+            <Link title="explore people" href="/peopleMayKnow">
               <FaSearch />
               explore people
             </Link>

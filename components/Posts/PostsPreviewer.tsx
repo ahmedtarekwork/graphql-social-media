@@ -357,6 +357,7 @@ const PostsPreviewer = ({
           type: "custom",
           component: (
             <Button
+              title="refresh the page"
               className="mx-auto"
               onClick={() => window.location.reload()}
             >
@@ -445,6 +446,7 @@ const PostsPreviewer = ({
 
       {!isFinalPage && (
         <Button
+          title="get more posts"
           onClick={handleFetchMore}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}

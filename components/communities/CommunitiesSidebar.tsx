@@ -72,7 +72,11 @@ const CommunitiesSidebar = ({
   return (
     <>
       {isMobile && (
-        <Button onClick={toggleSidebar} className="mb-2">
+        <Button
+          title={`see other ${mode}`}
+          onClick={toggleSidebar}
+          className="mb-2"
+        >
           <FaBars />
           other {mode}
         </Button>
@@ -82,6 +86,7 @@ const CommunitiesSidebar = ({
         {isMobile && (
           <SidebarHeader>
             <Button
+              title="close menu"
               className="red-btn circle-btn text-xl font-bold !h-[38px] w-[38px] ml-auto"
               onClick={toggleSidebar}
             >
@@ -97,6 +102,7 @@ const CommunitiesSidebar = ({
                 {sidebarItems.map(({ Icon, content, type }) => (
                   <SidebarMenuItem key={type}>
                     <Button
+                      title={content}
                       className={classNames(
                         "w-full !py-6 flex justify-start",
                         CommunitiesType === type ? "bg-secondary" : ""
@@ -115,6 +121,7 @@ const CommunitiesSidebar = ({
                 <SidebarMenuItem>
                   <Button asChild>
                     <Link
+                      title={`create new ${mode.replace("s", "")}`}
                       href={`/${mode}/new`}
                       className="w-full !py-6 flex !justify-start"
                       onClick={() => (isMobile ? toggleSidebar() : null)}

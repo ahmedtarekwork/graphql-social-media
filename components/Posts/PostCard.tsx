@@ -308,7 +308,7 @@ const PostCard = ({
           <AlertDialog>
             <DropdownMenu modal={false}>
               <Button asChild>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger title="see post options">
                   <BsThreeDots />
                 </DropdownMenuTrigger>
               </Button>
@@ -478,7 +478,7 @@ const PostCard = ({
             variant="ghost"
             className="hover:text-primary font-semibold"
           >
-            <DialogTrigger>
+            <DialogTrigger title="see comments on post">
               <FaCommentAlt size={20} className="fill-primary" />
               Comment
             </DialogTrigger>

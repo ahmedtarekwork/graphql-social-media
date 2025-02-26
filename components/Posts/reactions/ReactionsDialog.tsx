@@ -76,6 +76,7 @@ const ReactionsDialog = ({ itemId, reactionsCount, type }: Props) => {
               return (
                 <li key={name}>
                   <Button
+                    title={`see ${name} reactions`}
                     variant="ghost"
                     className={classNames(
                       `border-b-2 hover:!bg-opacity-20`,

@@ -246,6 +246,7 @@ const CommentsDialog = ({ postId, blockComments }: Props) => {
               type: "custom",
               component: (
                 <Button
+                  title="refresh the page"
                   className="mx-auto"
                   onClick={() => window.location.reload()}
                 >
@@ -420,7 +421,7 @@ const CommentsDialog = ({ postId, blockComments }: Props) => {
                     <AlertDialog>
                       <DropdownMenu modal={false}>
                         <Button asChild>
-                          <DropdownMenuTrigger>
+                          <DropdownMenuTrigger title="see comment option">
                             <BsThreeDots />
                           </DropdownMenuTrigger>
                         </Button>
@@ -479,6 +480,7 @@ const CommentsDialog = ({ postId, blockComments }: Props) => {
             disabled={loading || fetchMoreLoading}
             onClick={handleFetchMore}
             className="w-fit mx-auto"
+            title="get more comments"
           >
             See More
           </Button>

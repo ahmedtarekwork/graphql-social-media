@@ -118,6 +118,7 @@ const Sidebar = () => {
         {isMobile && (
           <SidebarHeader>
             <Button
+              title="close sidebar"
               className="red-btn circle-btn text-xl font-bold !h-[38px] w-[38px] ml-auto"
               onClick={toggleSidebar}
             >
@@ -136,6 +137,7 @@ const Sidebar = () => {
                   onClick={toggleSidebar}
                 >
                   <Button
+                    title="see notifications"
                     className="w-full !py-6 flex justify-between hide_header_icons:hidden"
                     onClick={() => setOpenDialog(true)}
                   >
@@ -169,7 +171,10 @@ const Sidebar = () => {
                     className="w-full !py-6 flex justify-between hide_header_icons:hidden"
                     onClick={toggleSidebar}
                   >
-                    <Link href="/friends/requests">
+                    <Link
+                      title="see friend ship requests"
+                      href="/friends/requests"
+                    >
                       <div className="flex gap-2 items-center">
                         <TiUserAdd size={22} />
                         <p>friendship requests</p>
@@ -203,7 +208,7 @@ const Sidebar = () => {
                       asChild
                       className="w-full !py-6 flex justify-start"
                     >
-                      <Link href={href}>
+                      <Link title={content} href={href}>
                         <Icon size={22} />
                         <p>{content}</p>
                       </Link>
@@ -214,6 +219,7 @@ const Sidebar = () => {
                 {user && (
                   <SidebarMenuItem className="mt-auto">
                     <Button
+                      title="logout"
                       className="w-full !py-6 flex justify-start"
                       onClick={async (e) => {
                         e.currentTarget.disabled = true;

@@ -402,6 +402,7 @@ const SignupPage = () => {
                   }}
                 >
                   <Button
+                    title="cancel profile picture"
                     className="red-btn w-full"
                     onClick={() => setProfilePicture(null)}
                     disabled={disableForm}
@@ -472,6 +473,7 @@ const SignupPage = () => {
                   }}
                 >
                   <Button
+                    title="cancel cover picture"
                     className="red-btn w-full"
                     onClick={() => setCoverPicture(null)}
                     disabled={disableForm}
@@ -499,6 +501,7 @@ const SignupPage = () => {
 
       <Button asChild>
         <motion.button
+          title="sign up"
           layout="position"
           className="w-full font-semibold py-5 bg-primary"
           disabled={disableForm || uploading}

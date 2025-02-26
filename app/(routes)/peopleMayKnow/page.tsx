@@ -64,6 +64,7 @@ const PeopleMayKnowPage = () => {
           type: "custom",
           component: (
             <Button
+              title="refresh the page"
               className="mx-auto"
               onClick={() => window.location.reload()}
             >
@@ -139,6 +140,7 @@ const PeopleMayKnowPage = () => {
 
       {!isFinalPage && (
         <Button
+          title="get more people you might be know"
           onClick={handleFetchMoreUsers}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}

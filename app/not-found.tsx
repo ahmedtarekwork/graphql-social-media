@@ -14,7 +14,7 @@ const notFound = () => {
         This Page Not Found
       </h1>
       <Button asChild>
-        <Link href="/">
+        <Link href="/" title="back to home">
           <IoHomeSharp />
           Back To Home
         </Link>

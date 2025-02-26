@@ -136,7 +136,9 @@ const ProfilePage = () => {
             type: "custom",
             component: (
               <Button asChild>
-                <Link href="/login">Login</Link>
+                <Link title="go to login page" href="/login">
+                  Login
+                </Link>
               </Button>
             ),
           }}
@@ -167,6 +169,7 @@ const ProfilePage = () => {
       <ul className="flex gap-2 bg-primary bg-opacity-20 p-3 mt-2 mb-4 rounded-md border-b-2 border-primary max-sm:justify-center max-sm:flex-wrap max-sm:[&>*]:flex-1 [&>*]:[&>*]:w-full">
         <li>
           <Button
+            title="show the posts"
             onClick={(e) => {
               putActiveClassOnTab(e);
               tabsSwitcherRef.current?.setActiveTab("posts");
@@ -184,6 +187,7 @@ const ProfilePage = () => {
               tabsSwitcherRef.current?.setActiveTab("friends");
             }}
             className="duration-200 transition"
+            title="show friends list"
           >
             Friends
           </Button>
@@ -196,6 +200,7 @@ const ProfilePage = () => {
               tabsSwitcherRef.current?.setActiveTab("about");
             }}
             className="duration-200 transition"
+            title="show some info about the profile owner"
           >
             About
           </Button>
@@ -209,6 +214,7 @@ const ProfilePage = () => {
                 putActiveClassOnTab(e);
                 tabsSwitcherRef.current?.setActiveTab("settings");
               }}
+              title="show settings options"
             >
               Settings
             </Button>

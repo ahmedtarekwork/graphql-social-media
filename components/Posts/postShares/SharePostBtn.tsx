@@ -145,6 +145,7 @@ const SharePostBtn = ({
 
   return (
     <Button
+      title={`${btnContent} post`}
       disabled={loading}
       variant={btnVariant}
       className={`${

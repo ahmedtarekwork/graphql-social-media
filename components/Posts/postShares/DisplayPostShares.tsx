@@ -169,6 +169,7 @@ const DisplayPostShares = ({
                   <Button
                     className="mx-auto"
                     onClick={() => window.location.reload()}
+                    title="refresh the page"
                   >
                     <FaArrowRotateLeft />
                     refresh page
@@ -241,6 +242,7 @@ const DisplayPostShares = ({
                 <Button
                   onClick={handleFetchMore}
                   disabled={fetchMoreLoading || loading}
+                  title="get post shares"
                 >
                   See More
                 </Button>

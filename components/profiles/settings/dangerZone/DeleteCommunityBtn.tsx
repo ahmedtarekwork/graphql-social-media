@@ -65,7 +65,7 @@ const DeleteCommunityBtn = ({ profileType }: Props) => {
   return (
     <AlertDialog>
       <Button asChild className="red-btn">
-        <AlertDialogTrigger disabled={loading}>
+        <AlertDialogTrigger title="ask for delete community" disabled={loading}>
           {loading ? (
             <>
               <Loading fill="white" size={18} /> Deleting

@@ -102,6 +102,7 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
             type: "custom",
             component: (
               <Button
+                title="go to login page"
                 asChild
                 className="mx-auto block text-center"
                 style={{ width: "95%" }}

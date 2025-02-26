@@ -230,7 +230,11 @@ const AdminsList = ({ profileType, isUserOwner }: Props) => {
           })}
       </ul>
       {!isFinalPage && (
-        <Button onClick={handleFetchMore} disabled={loading}>
+        <Button
+          title="get more admins"
+          onClick={handleFetchMore}
+          disabled={loading}
+        >
           See More
         </Button>
       )}

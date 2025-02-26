@@ -68,6 +68,7 @@ const Header = () => {
             <div className="max-hide_header_icons:!hidden">
               <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 <Button
+                  title="show notifications"
                   className="circle-btn relative"
                   onClick={() => setOpenDialog(true)}
                 >
@@ -93,13 +94,13 @@ const Header = () => {
               </Dialog>
 
               <Button asChild className="circle-btn">
-                <Link href="/savedPosts">
+                <Link title="show saved posts" href="/savedPosts">
                   <FaBookmark size={25} />
                 </Link>
               </Button>
 
               <Button asChild className="circle-btn relative">
-                <Link href="/friends/requests">
+                <Link title="see friend ship requests" href="/friends/requests">
                   {((!friendshipRequestsCountErr && friendshipRequestsCount) ||
                     friendshipRequestsCountLoading) && (
                     <div className="absolute top-[-17%] left-[-17%] shadow-md grid place-content-center bg-primary rounded-full w-[25px] h-[25px]">
@@ -140,6 +141,7 @@ const Header = () => {
               </Link>
 
               <Button
+                title="logout"
                 className="circle-btn"
                 onClick={async (e) => {
                   e.currentTarget.disabled = true;
@@ -163,11 +165,11 @@ const Header = () => {
 
         {!user && (
           <div className="max-sm:!hidden">
-            <Button asChild className="btn">
+            <Button title="login" asChild className="btn">
               <Link href="/login">Login</Link>
             </Button>
 
-            <Button asChild className="btn">
+            <Button title="sign up" asChild className="btn">
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>

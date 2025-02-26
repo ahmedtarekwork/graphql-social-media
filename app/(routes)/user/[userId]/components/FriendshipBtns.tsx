@@ -310,7 +310,7 @@ const FriendshipBtns = ({ userId }: Props) => {
 
   if (initLoading) {
     return (
-      <Button disabled>
+      <Button title="disabled always button for show loading" disabled>
         <Loading withText size={18} fill="white" />
       </Button>
     );
@@ -334,6 +334,7 @@ const FriendshipBtns = ({ userId }: Props) => {
     return (
       <div className="flex gap-2 flex-wrap">
         <Button
+          title="accept friend ship request"
           disabled={handleFriendshipRequestLoading || mainLoadingState}
           onClick={() => {
             handleFriendshipRequest({
@@ -351,6 +352,7 @@ const FriendshipBtns = ({ userId }: Props) => {
         </Button>
 
         <Button
+          title="cancel friend ship request"
           disabled={handleFriendshipRequestLoading || mainLoadingState}
           onClick={() => {
             handleFriendshipRequest({
@@ -379,6 +381,7 @@ const FriendshipBtns = ({ userId }: Props) => {
   ) {
     return (
       <Button
+        title="remove profile owner from your friends list"
         className="red-btn"
         onClick={() => {
           removeProfileOwnerFromFriendsList({
@@ -400,6 +403,7 @@ const FriendshipBtns = ({ userId }: Props) => {
   ) {
     return (
       <Button
+        title="add profile owner to your friends list"
         disabled={sendFriendshipRequestLoading || mainLoadingState}
         onClick={() => {
           if (!userId) {

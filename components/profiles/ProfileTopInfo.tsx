@@ -185,6 +185,7 @@ const ProfileTopInfo = ({
                 <FriendshipBtns userId={profileInfo._id} />
 
                 <Button
+                  title="copy user id"
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(profileInfo._id);
@@ -199,6 +200,7 @@ const ProfileTopInfo = ({
                 </Button>
 
                 <Button
+                  title="copy user profile link"
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(

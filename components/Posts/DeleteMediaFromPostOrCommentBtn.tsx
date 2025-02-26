@@ -137,7 +137,7 @@ const DeleteMediaFromPostOrCommentBtn = ({
   return (
     <div className="border-t-2 border-primary p-1">
       <AlertDialog>
-        <Button className="red-btn w-full" asChild>
+        <Button title="delete this media" className="red-btn w-full" asChild>
           <AlertDialogTrigger disabled={disableBtns || loading}>
             {loading ? "Deleting..." : <FaTrash size={18} />}
           </AlertDialogTrigger>

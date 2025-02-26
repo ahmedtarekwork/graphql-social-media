@@ -124,6 +124,7 @@ const SavedPostsPage = () => {
           type: "custom",
           component: (
             <Button
+              title="refresh the page"
               className="mx-auto"
               onClick={() => window.location.reload()}
             >
@@ -182,6 +183,7 @@ const SavedPostsPage = () => {
 
       {!isFinalPage && (
         <Button
+          title="get more saved posts"
           onClick={handleFetchMore}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}

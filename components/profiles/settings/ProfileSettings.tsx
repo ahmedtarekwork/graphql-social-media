@@ -68,6 +68,7 @@ const ProfileSettings = ({
             <label
               htmlFor="change-profile-picture-from-settings"
               className="cursor-pointer"
+              title="select profile picture"
             >
               {profileInfo.profilePicture ? (
                 <>
@@ -121,6 +122,7 @@ const ProfileSettings = ({
 
           <Button asChild>
             <label
+              title="select cover picture"
               htmlFor="change-cover-picture-from-settings"
               className="cursor-pointer"
             >

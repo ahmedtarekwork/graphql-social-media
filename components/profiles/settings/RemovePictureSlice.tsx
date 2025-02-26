@@ -125,7 +125,7 @@ const RemovePictureSlice = ({ pictureType, profile }: Props) => {
             loading || !profileInfo?.[pictureName as keyof typeof profileInfo]
           }
         >
-          <AlertDialogTrigger>
+          <AlertDialogTrigger title="ask for remove picture">
             <IoMdRemoveCircle />
             {loading ? "Loading..." : "remove"}
           </AlertDialogTrigger>
@@ -143,6 +143,7 @@ const RemovePictureSlice = ({ pictureType, profile }: Props) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button
+              title="remove picture"
               asChild
               className="red-btn"
               onClick={() => {

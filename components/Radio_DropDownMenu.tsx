@@ -39,7 +39,7 @@ const Radio_DropDownMenu = forwardRef<Radio_DropDownMenuRefType, Props>(
         {label && <p className="font-bold">{label}:</p>}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline">
+            <Button title="select option" variant="outline">
               {options.find(({ option }) => option === selected)?.text ||
                 label ||
                 "Choose an option"}

@@ -44,7 +44,11 @@ const SidebarTrigger = () => {
   }, [state]);
 
   return (
-    <Button className="circle-btn" onClick={toggleSidebar}>
+    <Button
+      title="toggle nav sidebar"
+      className="circle-btn"
+      onClick={toggleSidebar}
+    >
       <FaBars size={20} />
     </Button>
   );

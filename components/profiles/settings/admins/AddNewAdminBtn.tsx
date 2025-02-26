@@ -95,7 +95,7 @@ const AddNewAdminBtn = ({ type }: Props) => {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <Button asChild>
-        <AlertDialogTrigger disabled={loading}>
+        <AlertDialogTrigger title="add new admin" disabled={loading}>
           {loading ? "Adding..." : "+ Add"}
         </AlertDialogTrigger>
       </Button>
@@ -117,7 +117,11 @@ const AddNewAdminBtn = ({ type }: Props) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <Button onClick={handleAddNewAdmin} disabled={loading}>
+          <Button
+            title="submit admin"
+            onClick={handleAddNewAdmin}
+            disabled={loading}
+          >
             {loading ? (
               <Loading size={18} withText text="Adding..." fill="white" />
             ) : (

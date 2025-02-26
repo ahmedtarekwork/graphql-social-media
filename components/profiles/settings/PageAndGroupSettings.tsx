@@ -79,7 +79,7 @@ const PageAndGroupSettings = ({
   return (
     <Dialog open={openSettings} onOpenChange={setOpenSettings}>
       <Button asChild>
-        <DialogTrigger>
+        <DialogTrigger title="open settings">
           <IoSettings />
           Settings
         </DialogTrigger>
@@ -109,7 +109,7 @@ const PageAndGroupSettings = ({
               admins list
               <Dialog>
                 <Button asChild>
-                  <DialogTrigger>
+                  <DialogTrigger title="see admins list">
                     <FaEye />
                     Show
                   </DialogTrigger>

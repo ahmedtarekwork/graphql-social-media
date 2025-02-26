@@ -118,7 +118,7 @@ const FriendsRequestsPage = () => {
         btn={{
           type: "custom",
           component: (
-            <Button className="mx-auto">
+            <Button title="refresh the page" className="mx-auto">
               <FaArrowRotateLeft />
               refesh page
             </Button>
@@ -137,7 +137,7 @@ const FriendsRequestsPage = () => {
           type: "custom",
           component: (
             <Button asChild>
-              <Link href="/peopleMayKnow">
+              <Link title="explore other people" href="/peopleMayKnow">
                 <FaSearch size={19} fill="white" />
                 Explore Other Users
               </Link>
@@ -189,6 +189,7 @@ const FriendsRequestsPage = () => {
 
       {!isFinalPage && (
         <Button
+          title="get more friend ship requests"
           onClick={handleFetchMoreFriendshipRequests}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}

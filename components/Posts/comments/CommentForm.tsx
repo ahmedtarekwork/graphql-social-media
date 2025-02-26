@@ -335,12 +335,13 @@ const CommentForm = ({
               : "grid place-content-center cursor-pointer"
           )}
         >
-          <label htmlFor="add-media-to-comment">
+          <label title="add media to comment" htmlFor="add-media-to-comment">
             <RiImageAddFill size={16} />
           </label>
         </Button>
 
         <Button
+          title="sunmit comment"
           disabled={loading || uploadingMedia}
           className="flex-[0.2] max-md:w-full"
         >
@@ -348,6 +349,7 @@ const CommentForm = ({
         </Button>
         {mode === "edit" && (
           <Button
+            title="cancel changes on comment"
             disabled={loading || uploadingMedia}
             className="flex-[0.2] red-btn max-md:w-full"
             type="button"

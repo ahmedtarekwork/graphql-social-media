@@ -84,7 +84,7 @@ const UserCard = (props: Props) => {
 
       {btnType === "VIEW_PROFILE" && (
         <Button asChild className={styles.button}>
-          <Link href={`/user/${_id}`}>
+          <Link title="view this user profile" href={`/user/${_id}`}>
             <FaEye />
             View Profile
           </Link>

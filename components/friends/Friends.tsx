@@ -77,6 +77,7 @@ const Friends = ({ userId, mode }: Props) => {
             <Button
               className="mx-auto"
               onClick={() => window.location.reload()}
+              title="refresh this page"
             >
               <FaArrowRotateLeft />
               refresh page
@@ -97,7 +98,7 @@ const Friends = ({ userId, mode }: Props) => {
           type: "custom",
           component: isCurrentUserProfile ? (
             <Button asChild className="w-fit mx-auto">
-              <Link href="/peopleMayKnow">
+              <Link title="explore other people" href="/peopleMayKnow">
                 <FaExternalLinkAlt />
                 add some friends
               </Link>
@@ -162,6 +163,7 @@ const Friends = ({ userId, mode }: Props) => {
 
       {!isFinalPage && (
         <Button
+          title="get more friends"
           onClick={handleFetchMoreFriends}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}

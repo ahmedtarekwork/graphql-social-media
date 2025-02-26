@@ -143,6 +143,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
             <Button
               className="mx-auto"
               onClick={() => window.location.reload()}
+              title="refresh the page"
             >
               <FaArrowRotateLeft />
               refresh page
@@ -195,6 +196,7 @@ const ReactionTab = ({ itemId, reaction, activeReaction, type }: Props) => {
         <Button
           disabled={loading || fetchMoreLoading}
           onClick={handleFetchMore}
+          title="get more reactions"
         >
           See More
         </Button>

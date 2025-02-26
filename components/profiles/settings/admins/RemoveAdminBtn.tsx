@@ -144,7 +144,7 @@ const RemoveAdminBtn = ({
   return (
     <AlertDialog>
       <Button asChild className={classNames("red-btn", btnStyle)}>
-        <AlertDialogTrigger disabled={loading}>
+        <AlertDialogTrigger title="ask for remove admin" disabled={loading}>
           {loading || waitForFetchMore ? (
             <Loading withText size={18} fill="white" text="Processing..." />
           ) : (

@@ -272,6 +272,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
 
             <div className="flex gap-1 my-2 flex-wrap [&>*]:flex-1">
               <Button
+                title="submit picture"
                 disabled={loading}
                 onClick={async () => {
                   try {
@@ -343,6 +344,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
               </Button>
 
               <Button
+                title="cancel"
                 className="bg-red-600 hover:bg-red-500"
                 onClick={() => {
                   setNewPicture(null);
@@ -374,6 +376,7 @@ const ProfileAndCoverPicture = forwardRef<ProfileAndCoverPictureRefType, Props>(
             {pictureType === "cover" ? (
               <Button asChild className="rounded-none">
                 <label
+                  title="add picture"
                   htmlFor={`choose-${pictureType}-pricture`}
                   className="grid place-content-center h-[150px] p-4 cursor-pointer"
                 >

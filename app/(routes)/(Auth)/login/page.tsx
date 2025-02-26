@@ -187,6 +187,7 @@ const LoginPage = () => {
           layout="position"
           className="w-full font-semibold py-5 bg-primary"
           disabled={loading}
+          title="login"
         >
           {loading ? "Loading..." : "Login"}
         </motion.button>

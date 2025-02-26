@@ -265,6 +265,7 @@ const JoinRequestsListContent = ({
             customCardBtn={({ btnStyle }) => (
               <div className="flex flex-wrap gap-2">
                 <Button
+                  title="accept join group request"
                   className={btnStyle}
                   disabled={handleJoinRequestLoading}
                   onClick={() =>
@@ -284,6 +285,7 @@ const JoinRequestsListContent = ({
                   Accept
                 </Button>
                 <Button
+                  title="cancel join group request"
                   className={classNames(btnStyle, "red-btn")}
                   disabled={handleJoinRequestLoading}
                   onClick={() =>
@@ -311,6 +313,7 @@ const JoinRequestsListContent = ({
 
       {!isFinalPage && (
         <Button
+          title="get more join requests"
           onClick={handleFetchMore}
           className="w-fit mx-auto mt-4"
           disabled={fetchMoreLoading || loading}
@@ -340,7 +343,10 @@ const GroupJoinRequestsList = () => {
   return (
     <Dialog>
       <Button asChild>
-        <DialogTrigger className="flex-wrap justify-center gap-2.5">
+        <DialogTrigger
+          title="show goup join requests"
+          className="flex-wrap justify-center gap-2.5"
+        >
           <FaEnvelope size={18} /> join requests
           {((!error && count) || loading) && (
             <div className="text-primary shadow-md grid place-content-center bg-white rounded-full w-[20px] h-[20px] relative">

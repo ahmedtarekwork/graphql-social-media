@@ -166,7 +166,10 @@ const DisplayCommunities = ({
           type: "custom",
           component: (
             <Button asChild className="flex w-fit mx-auto">
-              <Link href={`/${pluralCommunityName}/new`}>
+              <Link
+                title={`create a ${mode}`}
+                href={`/${pluralCommunityName}/new`}
+              >
                 <MdFiberNew />
                 create a {mode}
               </Link>
@@ -183,6 +186,7 @@ const DisplayCommunities = ({
           type: "custom",
           component: (
             <Button
+              title={`explore ${pluralCommunityName}`}
               className="mx-auto"
               onClick={() => setCommunitiesType("explore")}
             >
@@ -212,13 +216,18 @@ const DisplayCommunities = ({
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 0.9fr))",
         }}
       >
-        {communities.map((page) => (
-          <CommunityCard key={page._id} community={page} type={mode} />
+        {communities.map((community) => (
+          <CommunityCard
+            key={community._id}
+            community={community}
+            type={mode}
+          />
         ))}
       </ul>
 
       {!isFinalPage && (
         <Button
+          title={`get more ${mode}s`}
           disabled={loading || fetchMoreLoading}
           onClick={handleFetchMore}
         >

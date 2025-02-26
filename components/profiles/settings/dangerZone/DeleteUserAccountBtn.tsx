@@ -64,7 +64,10 @@ const DeleteUserAccount = () => {
   return (
     <AlertDialog>
       <Button asChild className="red-btn">
-        <AlertDialogTrigger disabled={loading}>
+        <AlertDialogTrigger
+          title="ask for delete user account"
+          disabled={loading}
+        >
           {loading ? (
             <>
               <Loading size={18} fill="white" /> Deleting...
