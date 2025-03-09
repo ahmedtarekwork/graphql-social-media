@@ -1,12 +1,3 @@
-// nextjs
-import { useRouter } from "next/navigation";
-
-// react
-import { useContext } from "react";
-
-// contexts
-import { authContext } from "@/contexts/AuthContext";
-
 // components
 import Loading from "@/components/Loading";
 
@@ -29,6 +20,7 @@ import { gql, useMutation } from "@apollo/client";
 
 // utils
 import { toast } from "sonner";
+import useLogout from "@/hooks/useLogout";
 
 const DELETE_ACCOUNT = gql`
   mutation DeleteCurrentUserAccount {
@@ -39,8 +31,7 @@ const DELETE_ACCOUNT = gql`
 `;
 
 const DeleteUserAccount = () => {
-  const { setUser } = useContext(authContext);
-  const router = useRouter();
+  const { logout } = useLogout(false);
 
   const [deleteAccount, { loading }] = useMutation(DELETE_ACCOUNT, {
     async onCompleted(data) {
@@ -48,10 +39,7 @@ const DeleteUserAccount = () => {
         data?.deleteUser?.message || "your account deleted successfully"
       );
 
-      await fetch("/api/logout");
-
-      setUser(null);
-      router.push("/login");
+      logout();
     },
     onError({ graphQLErrors }) {
       toast.error(

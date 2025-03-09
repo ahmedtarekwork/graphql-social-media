@@ -2,7 +2,6 @@
 
 // nextjs
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // react
 import { useContext, useId, useState } from "react";
@@ -45,7 +44,9 @@ import { type IconType } from "react-icons";
 
 // utils
 import { nanoid } from "nanoid";
-import { toast } from "sonner";
+
+// hooks
+import useLogout from "@/hooks/useLogout";
 
 const sidebarItems: {
   content: string;
@@ -86,10 +87,11 @@ const sidebarItems: {
 ].map((item) => ({ ...item, id: nanoid() }));
 
 const Sidebar = () => {
-  const router = useRouter();
+  const { logout, loading } = useLogout();
+
   const [openDialog, setOpenDialog] = useState(false);
 
-  const { user, setUser } = useContext(authContext);
+  const { user } = useContext(authContext);
   const {
     friendshipRequests: {
       count: friendshipRequestsCount,
@@ -221,21 +223,10 @@ const Sidebar = () => {
                     <Button
                       title="logout"
                       className="w-full !py-6 flex justify-start"
-                      onClick={async (e) => {
-                        e.currentTarget.disabled = true;
-                        try {
-                          await fetch("/api/logout");
-                          setUser(null);
-                          router.push("/login");
-
-                          toggleSidebar();
-
-                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        } catch (err) {
-                          toast.error("can't logout at the momment");
-                        } finally {
-                          if (e.currentTarget) e.currentTarget.disabled = false;
-                        }
+                      disabled={loading}
+                      onClick={async () => {
+                        await logout();
+                        toggleSidebar();
                       }}
                     >
                       <MdLogout />

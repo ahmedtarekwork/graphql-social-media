@@ -9,6 +9,7 @@ import "./globals.css";
 import ApolloContext from "@/contexts/ApolloContext";
 import AuthContext from "@/contexts/AuthContext";
 import UserNotificationsCountContext from "@/contexts/UserNotificationsCountContext";
+import PostsProvider from "@/contexts/PostsContext";
 
 // utils
 import { Toaster } from "sonner";
@@ -86,16 +87,18 @@ export default function RootLayout({
           <Toaster richColors />
 
           <AuthContext>
-            <UserNotificationsCountContext>
-              <SidebarProvider defaultOpen={false}>
-                <Header />
-                <Sidebar />
-              </SidebarProvider>
+            <PostsProvider>
+              <UserNotificationsCountContext>
+                <SidebarProvider defaultOpen={false}>
+                  <Header />
+                  <Sidebar />
+                </SidebarProvider>
 
-              <main className="flex-1 flex flex-col container my-4">
-                {children}
-              </main>
-            </UserNotificationsCountContext>
+                <main className="flex-1 flex flex-col container my-4">
+                  {children}
+                </main>
+              </UserNotificationsCountContext>
+            </PostsProvider>
 
             <Footer />
           </AuthContext>

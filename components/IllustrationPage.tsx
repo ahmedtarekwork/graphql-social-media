@@ -1,11 +1,11 @@
 // nextjs
-import Image from "next/image";
 import Link from "next/link";
 
 // react
 import type { ReactNode } from "react";
 
 // components
+import ImageWithLoading from "./ImageWithLoading";
 // shadcn
 import { Button } from "@/components/ui/button";
 
@@ -34,13 +34,14 @@ type Props = {
 const IllustrationPage = ({ content, svg, btn }: Props) => {
   return (
     <>
-      <Image
+      <ImageWithLoading
         src={svg}
         alt="illustration"
         width={300}
         height={300}
-        className="max-h-[300px] max-w-full mx-auto"
+        className="max-h-[300px] max-w-full mx-auto aspect-[1]"
         priority
+        customSize={50}
       />
 
       <h1 className="text-primary font-bold text-2xl text-center my-4">

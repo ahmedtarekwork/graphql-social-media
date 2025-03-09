@@ -9,9 +9,6 @@ import { useContext, useRef, useState } from "react";
 // contexts
 import { authContext } from "@/contexts/AuthContext";
 
-// providers
-import PostsProvider from "@/contexts/PostsContext";
-
 // components
 import IllustrationPage from "@/components/IllustrationPage";
 import ProfileTopInfo from "@/components/profiles/ProfileTopInfo";
@@ -127,29 +124,27 @@ const SinglePagePage = () => {
       <div className="bg-primary h-0.5" />
 
       <div className="space-y-2 mt-2">
-        <PostsProvider>
-          {!normalUser && (
-            <PostForm
-              profileInfo={pageInfo}
-              profileType="page"
-              mode="new"
-              fetchMoreLoading={fetchMoreLoading}
-              setStopFetchMore={setStopFetchMore}
-              skipCount={skipCount}
-              homePage={false}
-            />
-          )}
-
-          <PostsPreviewer
+        {!normalUser && (
+          <PostForm
+            profileInfo={pageInfo}
+            profileType="page"
+            mode="new"
             fetchMoreLoading={fetchMoreLoading}
-            mode="singlePageInfoPage"
-            setFetchMoreLoading={setFetchMoreLoading}
             setStopFetchMore={setStopFetchMore}
-            stopFetchMore={stopFetchMore}
             skipCount={skipCount}
-            normalUser={normalUser}
+            homePage={false}
           />
-        </PostsProvider>
+        )}
+
+        <PostsPreviewer
+          fetchMoreLoading={fetchMoreLoading}
+          mode="singlePageInfoPage"
+          setFetchMoreLoading={setFetchMoreLoading}
+          setStopFetchMore={setStopFetchMore}
+          stopFetchMore={stopFetchMore}
+          skipCount={skipCount}
+          normalUser={normalUser}
+        />
       </div>
     </div>
   );

@@ -3,7 +3,6 @@
 // nextjs
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 
 // react
 import { useContext, useState } from "react";
@@ -25,12 +24,11 @@ import { FaUser, FaBell, FaBookmark } from "react-icons/fa";
 import { MdLogout } from "react-icons/md";
 import { TiUserAdd } from "react-icons/ti";
 
-// utils
-import { toast } from "sonner";
+// hooks
+import useLogout from "@/hooks/useLogout";
 
 const Header = () => {
-  const router = useRouter();
-  const { user, setUser } = useContext(authContext);
+  const { user } = useContext(authContext);
   const {
     friendshipRequests: {
       count: friendshipRequestsCount,
@@ -45,6 +43,8 @@ const Header = () => {
   } = useContext(userNotificationsCountContext);
 
   const [openDialog, setOpenDialog] = useState(false);
+
+  const { logout, loading } = useLogout();
 
   return (
     <header id="app-header" className="bg-primary bg-opacity-[42%]">
@@ -143,19 +143,8 @@ const Header = () => {
               <Button
                 title="logout"
                 className="circle-btn"
-                onClick={async (e) => {
-                  e.currentTarget.disabled = true;
-                  try {
-                    await fetch("/api/logout");
-                    setUser(null);
-                    router.push("/login");
-
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  } catch (err) {
-                    toast.error("can't logout at the momment");
-                    if (e.currentTarget) e.currentTarget.disabled = false;
-                  }
-                }}
+                disabled={loading}
+                onClick={logout}
               >
                 <MdLogout size={23} />
               </Button>

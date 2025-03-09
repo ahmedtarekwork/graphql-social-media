@@ -6,12 +6,12 @@ import { ApolloServer } from "@apollo/server";
 import { buildSubgraphSchema } from "@apollo/subgraph";
 
 // resolvers
-import userResolvers from "../_resolvers/user.resolver";
-import postResolvers from "../_resolvers/post.resolver";
-import commentResolvers from "../_resolvers/comment.resolver";
-import pageResolvers from "../_resolvers/page.resolver";
-import storyResolvers from "../_resolvers/story.resolver";
-import groupResolvers from "../_resolvers/group.resolver";
+import userResolvers from "../_resolvers/user/user.resolver";
+import postResolvers from "../_resolvers/post/post.resolver";
+import commentResolvers from "../_resolvers/comment/comment.resolver";
+import pageResolvers from "../_resolvers/page/page.resolver";
+import storyResolvers from "../_resolvers/story/story.resolver";
+import groupResolvers from "../_resolvers/group/group.resolver";
 
 // typeDefs
 import publicTypeDefs from "../_typeDefs/public.typeDefs";
