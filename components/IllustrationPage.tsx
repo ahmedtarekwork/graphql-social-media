@@ -27,7 +27,7 @@ export type IllustrationPageBtnType =
 
 type Props = {
   content: ReactNode;
-  svg: StaticImport;
+  svg: StaticImport | Record<string, string>;
   btn: IllustrationPageBtnType;
 };
 
@@ -35,7 +35,7 @@ const IllustrationPage = ({ content, svg, btn }: Props) => {
   return (
     <>
       <ImageWithLoading
-        src={svg}
+        src={(svg as Record<string, string>).src}
         alt="illustration"
         width={300}
         height={300}

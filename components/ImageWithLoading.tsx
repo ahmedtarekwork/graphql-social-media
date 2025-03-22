@@ -32,6 +32,8 @@ const ImageWithLoading = ({
             },
           });
 
+          if (!response.ok) throw new Error();
+
           const blob = await response.blob();
 
           setSrc(URL.createObjectURL(blob));
@@ -70,6 +72,8 @@ const ImageWithLoading = ({
 
     return <Loading fill={spinnerFill} />;
   }
+
+  if (!src) return;
 
   return (
     <Image
