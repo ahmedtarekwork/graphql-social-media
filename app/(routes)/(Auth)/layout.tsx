@@ -21,6 +21,6 @@ const AuthLayout = ({ children }: { children: ReactNode }) => {
     }
   }, [user, pathname, router]);
 
-  return <>{children}</>;
+  return children;
 };
 export default AuthLayout;

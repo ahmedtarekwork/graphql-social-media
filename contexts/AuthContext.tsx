@@ -1,8 +1,7 @@
 "use client";
 
 // next
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 // react
 import {
@@ -13,22 +12,17 @@ import {
   type Dispatch,
   type SetStateAction,
   type ReactNode,
+  useEffect,
 } from "react";
 
 // components
 import Loading from "@/components/Loading";
-import IllustrationPage from "@/components/IllustrationPage";
-// shadcn
-import { Button } from "@/components/ui/button";
 
 // types
 import type { UserType } from "@/lib/types";
 
 // apollo
 import { gql, useQuery } from "@apollo/client";
-
-// SVGs
-import loginSVG from "/public/illustrations/login.svg";
 
 export const authContext = createContext<{
   user: UserType | null;
@@ -58,6 +52,7 @@ const CHECK_USER = gql`
 
 const AuthContext = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
+  const router = useRouter();
 
   const needAuthRoutes = [
     "/user/profile",
@@ -85,36 +80,26 @@ const AuthContext = ({ children }: { children: ReactNode }) => {
     },
   });
 
-  if (loading) return <Loading />;
+  useEffect(() => {
+    if (!loading) {
+      if (["/login", "/signup"].includes(pathname) && user) {
+        router.push("/");
+      }
 
-  if (
-    (needAuthRoutes.includes(pathname) ||
-      pathname === "/" ||
-      pathname.startsWith("/editPost/")) &&
-    !user
-  ) {
-    return (
-      <div className="grid place-content-center" style={{ height: "100vh" }}>
-        <IllustrationPage
-          content="you need to login first"
-          svg={loginSVG}
-          btn={{
-            type: "custom",
-            component: (
-              <Button
-                title="go to login page"
-                asChild
-                className="mx-auto block text-center"
-                style={{ width: "95%" }}
-              >
-                <Link href="/login">Login</Link>
-              </Button>
-            ),
-          }}
-        />
-      </div>
-    );
-  }
+      if (
+        (needAuthRoutes.includes(pathname) ||
+          pathname === "/" ||
+          pathname.startsWith("/editPost/")) &&
+        !user
+      ) {
+        router.push("/login");
+      }
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, pathname, router]);
+
+  if (loading) return <Loading />;
 
   return (
     <authContext.Provider
